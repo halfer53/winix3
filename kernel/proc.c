@@ -54,6 +54,7 @@ static void enqueue_tail(proc_t **q, proc_t *proc) {
  **/
 static void enqueue_head(proc_t **q, proc_t *proc) {
 	if(q[HEAD] == NULL) {
+		proc->next = NULL;
 		q[HEAD] = q[TAIL] = proc;
 	}
 	else {
@@ -77,13 +78,16 @@ static proc_t *dequeue(proc_t **q) {
 	
 	if(p == NULL) { //Empty list
 		assert(q[TAIL] == NULL, "deq: tail not null");
+		return NULL;
 	}
-	else if(q[HEAD] == q[TAIL]) { //Last item
+	
+	if(q[HEAD] == q[TAIL]) { //Last item
 		q[HEAD] = q[TAIL] = NULL;
 	}
 	else { //At least one remaining item
 		q[HEAD] = p->next;
 	}
+	p->next = NULL;
 	return p;
 }
 
