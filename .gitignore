@@ -1,6 +1,6 @@
 WRAMP Manual.pdf
-unset.sh
-unset.sh~
+*.sh
+*.sh~
 RexSimulator.dll
 RexSimulatorGui.exe
 *.o
