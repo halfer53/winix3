@@ -3,3 +3,6 @@ unset.sh
 unset.sh~
 RexSimulator.dll
 RexSimulatorGui.exe
+*.o
+*.s
+*.srec
