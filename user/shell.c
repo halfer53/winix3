@@ -5,7 +5,7 @@
  *  2016-09-19		Paul Monigatti			Original
  **/
  
-#include <syscall.h>
+#include <sys/syscall.h>
 #include <stdio.h>
 #include <stddef.h>
 
