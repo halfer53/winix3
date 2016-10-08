@@ -33,7 +33,6 @@ struct cmd {
 
 //Command handling
 struct cmd commands[] = {
-	{ "ps", ps },
 	{ "uptime", uptime },
 	{ "shutdown", shutdown },
 	{ "exit", exit },
@@ -49,14 +48,6 @@ struct cmd commands[] = {
  **/
 int isPrintable(int c) {
 	return ('!' <= c && c <= '~');
-}
-
-/**
- * Prints the process table
- **/
-int ps(int argc, char **argv) {
-	printf("Placeholder for PS\r\n");
-	return 0;
 }
 
 int hex2int(char *a, int len)
@@ -80,7 +71,7 @@ int Substring(char* buffer,char* original,int start_index,int length){
 	for(i = start_index; i<length+start_index; i++)
   {
 				if (original[i] == '\0') {
-					printf("End of string reached in Substring, in Substring, original %s, start_index %d,length %d\r\n",original,start_index,length );
+					printf("End of string reached in Substring, original %s, start_index %d,length %d\r\n",original,start_index,length );
 					break;
 				}
         buffer[count] = original[i];

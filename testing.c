@@ -55,6 +55,7 @@ int exec(int argc, char **argv){
 	int wordsLoaded = 0;
 	int index = 0;
 	int checksum = 0;
+  byte byteCheckSum = 0;
 	int recordType = 0;
 	int addressLength = 0;
 	int byteCount = 0;
@@ -132,7 +133,7 @@ int exec(int argc, char **argv){
 				//int byteCount = Convert.ToInt32(line.Substring(index, 2), 16);
 				printf("byteCount %d\r\n",byteCount);
 
-				checksum += byteCount;
+				//checksum += byteCount;
 
 				//Address, 4, 6 or 8 hex digits determined by the record type
 				for (i = 0; i < addressLength; i++)
@@ -170,16 +171,18 @@ int exec(int argc, char **argv){
 				tempBufferCount = Substring(buffer,line,index,2);
 				printf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				readChecksum = hex2int(buffer,tempBufferCount);
-
-				checksum = (~checksum & 0xFF);
         printf("checksum %d\r\n",checksum );
-				if (readChecksum != checksum){
+				byteCheckSum = (checksum & 0xFF);
+        printf("checksum %d\r\n",byteCheckSum );
+        byteCheckSum = ~byteCheckSum;
+        printf("checksum %d\r\n",byteCheckSum );
+				if (readChecksum != byteCheckSum){
 					printf("failed checksum\r\n" );
 					return;
 				}
 
 				//Put in memory
-				assert(byteCount % 4 == 0, "Data should only contain full 32-bit words.");
+				assert((byteCount-1) % 4 == 0, "Data should only contain full 32-bit words.");
 				switch (recordType)
 				{
 						case 3: //data intended to be stored in memory.
