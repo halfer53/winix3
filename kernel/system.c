@@ -63,6 +63,8 @@ void system_main() {
 	printf("BSS Segment:  0x%x - 0x%x\r\n", &BSS_BEGIN, &BSS_END);
 	printf("Unallocated:  0x%x - 0x%x\r\n", FREE_MEM_BEGIN, FREE_MEM_END);
 
+
+
 	//Receive message, do work, repeat.
 	while(1) {
 		message_t m;
@@ -85,14 +87,20 @@ void system_main() {
 				break;
 
 			//Exits the current process.
-			case SYSCALL_EXIT:
-				printf("\r\n[SYSTEM] Process \"%s (%d)\" exited with code %d\r\n", p->name, p->proc_index, m.i1);
-				//TODO: keep process in zombie state until parent calls wait, so the exit value can be retrieved
-				end_process(p);
-				break;
+			// case SYSCALL_EXIT:
+			// 	printf("\r\n[SYSTEM] Process \"%s (%d)\" exited with code %d\r\n", p->name, p->proc_index, m.i1);
+			// 	//TODO: keep process in zombie state until parent calls wait, so the exit value can be retrieved
+			// 	end_process(p);
+			// 	break;
 
 			case SYSCALL_PROCESS_OVERVIEW:
 				response = process_overview();
+				break;
+
+			case SYSCALL_FORK:
+				response = fork_current_proc();
+				m.i1 = response;
+				winix_send(who, &m);
 				break;
 
 			//System call number is unknown, or not yet implemented.
@@ -101,6 +109,5 @@ void system_main() {
 				end_process(p);
 				break;
 		}
-		printf("end of switch\r\n" );
 	}
 }

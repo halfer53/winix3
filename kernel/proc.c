@@ -166,6 +166,96 @@ static proc_t *pick_proc() {
 	return NULL;
 }
 
+
+
+
+
+int fork_current_proc(){
+	proc_t *original = NULL;
+	proc_t *p = NULL;
+	char* original_name;
+	int i = 0;
+	char buffer[PROC_NAME_LEN];
+
+	for(i = 0; i < NUM_QUEUES; i++) {
+		if(ready_q[i][HEAD] != NULL) {
+			original = ready_q[i][HEAD];
+		}
+	}
+
+	original_name = original->name;
+		buffer[0] = 'f';
+		buffer[1] = 'o';
+		buffer[2] = 'r';
+		buffer[3] = 'k';
+		buffer[4] = '_';
+		//TODO: replace with strncpy
+		for(i = 5; i < PROC_NAME_LEN; i++) {
+			buffer[i] = *original_name;
+
+			if(*original_name++ == '\0') {
+				break;
+			}
+	}
+
+	p = new_proc(original->pc, original->priority, buffer);
+	assert(p != NULL, "Fork");
+	p->ra = original->ra;
+	p->pc = original->pc;
+	p->cctrl = original->cctrl;
+	printf("original\r\n");
+	printProceInfo(original);
+	printf("forked\r\n");
+	printProceInfo(p);
+
+
+	//error
+	//original = &proc_table[2]; would cause error, but [0] wouldn't
+	//original = &proc_table[4]; //fork shell.c
+	// original_name = original->name;
+	// if (p = get_free_proc()) {
+	// 	//sp is set to the new process
+	// 	p->ra = original->ra;
+	// 	p->pc = original->pc;
+	// 	p->cctrl = original->cctrl;
+	// 	//TODO
+	// 	//set up rbase and ptable instead of copying off the original one
+	// 	p->rbase = original->rbase;
+	//
+	// 	//p->ptable = original->ptable;
+	//
+	// 	//Initialise protection table
+	// 	//TODO: this loop allows unrestricted access to all memory.
+	// 	//Update to only enable memory blocks belonging to the process.
+	// 	p->ptable = p->protection_table;
+	// 	for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
+	// 		p->protection_table[i] = 0xffffffff;
+	// 	}
+	//
+	// 	p->name[0] = 'f';
+	// 	p->name[1] = 'o';
+	// 	p->name[2] = 'r';
+	// 	p->name[3] = 'k';
+	// 	p->name[4] = '_';
+	// 	//TODO: replace with strncpy
+	// 	for(i = 5; i < PROC_NAME_LEN; i++) {
+	// 		p->name[i] = *original_name;
+	//
+	// 		if(*original_name++ == '\0') {
+	// 			break;
+	// 		}
+	// 	}
+	//
+	// 	p->priority = original->priority;
+	// 	p->quantum = original->quantum;
+	// 	//ticks_left and time_used is set to default
+	// 	p->state = RUNNABLE;
+	// 	//flags, sender_q, next_sender, and message is set to default
+	// 	enqueue_tail(ready_q[p->priority],p);
+	// }
+	return p->proc_index;
+}
+
 /**
  * Creates a new process and adds it to the runnable queue
  *
@@ -237,8 +327,7 @@ void end_process(proc_t *p) {
 
 int process_overview(){
 	int i=0;
-	proc_t *curr;
-	printf("process overview\r\n" );
+	proc_t *curr = NULL;
 	if (current_proc != NULL) {
 		printf("current_proc sp 0x%x name %s state %s\r\n", current_proc->sp,current_proc->name,getStateName(current_proc->state));
 	}
@@ -247,12 +336,16 @@ int process_overview(){
 			printf("priority %d\r\n",i );
 			curr = ready_q[i][HEAD];
 			while(curr != NULL){
-				printf("name %s, proc_index %d, Stack_Address 0x%x, state %s\r\n",curr->name, curr->proc_index, curr->sp,getStateName(curr->state));
+				printProceInfo(curr);
 				curr = curr->next;
 			}
 		}
 	}
 	return 0;
+}
+
+void printProceInfo(proc_t* curr){
+	printf("name %s, proc_index %d, Stack_Address 0x%x, state %s\r\n",curr->name, curr->proc_index, curr->sp,getStateName(curr->state));
 }
 
 char* getStateName(proc_state_t state){

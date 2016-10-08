@@ -39,6 +39,14 @@ int sys_process_overview(){
 
 	m.type = SYSCALL_PROCESS_OVERVIEW;
 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
-	printf("finished system call\r\n" );
 	return 0;
+}
+
+int sys_fork(){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_FORK;
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	return m.i1;
 }
