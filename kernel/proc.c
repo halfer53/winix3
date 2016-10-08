@@ -63,6 +63,10 @@ static void enqueue_head(proc_t **q, proc_t *proc) {
 	}
 }
 
+static void do_nothing(){
+
+}
+
 /**
  * Removes the head of a list.
  *
@@ -75,12 +79,12 @@ static void enqueue_head(proc_t **q, proc_t *proc) {
  **/
 static proc_t *dequeue(proc_t **q) {
 	proc_t *p = q[HEAD];
-	
+
 	if(p == NULL) { //Empty list
 		assert(q[TAIL] == NULL, "deq: tail not null");
 		return NULL;
 	}
-	
+
 	if(q[HEAD] == q[TAIL]) { //Last item
 		q[HEAD] = q[TAIL] = NULL;
 	}
@@ -104,18 +108,18 @@ static proc_t *dequeue(proc_t **q) {
 static proc_t *get_free_proc() {
 	int i;
 	proc_t *p = dequeue(free_proc);
-	
+
 	if(p) {
 		//Clear register values
 		for(i = 0; i < NUM_REGS; i++) {
 			p->regs[i] = DEFAULT_REG_VALUE;
 		}
-		
+
 		//Clear stack
 		for(i = 0; i < DEFAULT_STACK_SIZE; i++) {
 			proc_stacks[p->proc_index][i] = DEFAULT_MEM_VALUE;
 		}
-		
+
 		//Initialise state
 		p->sp = proc_stacks[p->proc_index];
 		p->sp += DEFAULT_STACK_SIZE; //start at the "top" of the stack
@@ -124,14 +128,14 @@ static proc_t *get_free_proc() {
 		p->rbase = DEFAULT_RBASE;
 		p->ptable = DEFAULT_PTABLE;
 		p->cctrl = DEFAULT_CCTRL;
-		
+
 		p->priority = 0;
 		p->quantum = DEFAULT_QUANTUM;
 		p->ticks_left = 0;
 		p->time_used = 0;
 		p->state = INITIALISING;
 		p->flags = DEFAULT_FLAGS;
-		
+
 		p->sender_q = NULL;
 		p->next_sender = NULL;
 		p->message = NULL;
@@ -151,14 +155,14 @@ static proc_t *get_free_proc() {
  **/
 static proc_t *pick_proc() {
 	int i;
-	
+
 	//Find the highest-priority non-empty queue
 	for(i = 0; i < NUM_QUEUES; i++) {
 		if(ready_q[i][HEAD] != NULL) {
 			return dequeue(ready_q[i]);
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -181,26 +185,26 @@ static proc_t *pick_proc() {
 proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 	proc_t *p = NULL;
 	int i;
-	
+
 	//Is the priority valid?
 	if(!(0 <= priority && priority < NUM_QUEUES)) {
 		return NULL;
 	}
-	
+
 	//Get a free slot in the process table
 	if(p = get_free_proc()) {
 		p->priority = priority;
 		p->pc = entry;
-		
+
 		//TODO: replace with strncpy
-		for(i = 0; i < PROC_NAME_LEN; i++) {		
+		for(i = 0; i < PROC_NAME_LEN; i++) {
 			p->name[i] = *name;
-			
+
 			if(*name++ == '\0') {
 				break;
 			}
 		}
-		
+
 		//Initialise protection table
 		//TODO: this loop allows unrestricted access to all memory.
 		//Update to only enable memory blocks belonging to the process.
@@ -208,7 +212,7 @@ proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
 			p->protection_table[i] = 0xffffffff;
 		}
-		
+
 		//Set the process to runnable, and enqueue it.
 		p->state = RUNNABLE;
 		enqueue_tail(ready_q[priority], p);
@@ -219,16 +223,48 @@ proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 /**
  * Exits a process, and frees its slot in the process table.
  *
- * Note: 
+ * Note:
  *   The process must not currently belong to any linked list.
  *
  * Side Effects:
  *   Process state is set to DEAD, and is returned to the free_proc list.
  **/
 void end_process(proc_t *p) {
-	p->state = DEAD;
-	enqueue_tail(free_proc, p);
+
+	 p->state = DEAD;
+	 enqueue_tail(free_proc, p);
 }
+
+int process_overview(){
+	int i=0;
+	proc_t *curr;
+	printf("process overview\r\n" );
+	if (current_proc != NULL) {
+		printf("current_proc sp 0x%x name %s state %s\r\n", current_proc->sp,current_proc->name,getStateName(current_proc->state));
+	}
+	for (i=0; i < NUM_QUEUES; i++) {
+		if (ready_q[i][HEAD] != NULL) {
+			printf("priority %d\r\n",i );
+			curr = ready_q[i][HEAD];
+			while(curr != NULL){
+				printf("name %s, proc_index %d, Stack_Address 0x%x, state %s\r\n",curr->name, curr->proc_index, curr->sp,getStateName(curr->state));
+				curr = curr->next;
+			}
+		}
+	}
+	return 0;
+}
+
+char* getStateName(proc_state_t state){
+	switch (state) {
+		case DEAD: return "DEAD";
+		case INITIALISING: return "INITIALISING";
+		case RUNNABLE: return "RUNNABLE";
+		case ZOMBIE: return "ZOMBIE";
+		default: return "none";
+	}
+}
+
 
 /**
  * The Scheduler.
@@ -246,7 +282,7 @@ void sched() {
 	if(current_proc != NULL && !current_proc->flags) {
 		//Accounting
 		current_proc->time_used++;
-		
+
 		//If there's still time left, reduce timeslice and add it to the head of its priority queue
 		if(--current_proc->ticks_left) {
 			enqueue_head(ready_q[current_proc->priority], current_proc);
@@ -255,16 +291,16 @@ void sched() {
 			enqueue_tail(ready_q[current_proc->priority], current_proc);
 		}
 	}
-	
+
 	//Get the next task
 	current_proc = pick_proc();
 	assert(current_proc != NULL, "sched: current_proc null");
-	
+
 	//Reset quantum if needed
 	if(current_proc->ticks_left == 0) {
 		current_proc->ticks_left = current_proc->quantum;
 	}
-	
+
 	//Load context and run
 	wramp_load_context();
 }
@@ -298,17 +334,17 @@ proc_t *get_proc(int proc_nr) {
  **/
 int wini_send(int dest, message_t *m) {
 	proc_t *pDest;
-	
+
 	current_proc->message = m; //save for later
-	
+
 	//Is the destination valid?
 	if(pDest = get_proc(dest)) {
-		
+
 		//If destination is waiting, deliver message immediately.
 		if(pDest->flags & RECEIVING) {
 			//Copy message to destination
 			*(pDest->message) = *m;
-			
+
 			//Unblock receiver
 			pDest->flags &= ~RECEIVING;
 			enqueue_head(ready_q[pDest->priority], pDest);
@@ -321,7 +357,7 @@ int wini_send(int dest, message_t *m) {
 		}
 		return 0;
 	}
-	
+
 	return -1;
 }
 
@@ -335,15 +371,15 @@ int wini_send(int dest, message_t *m) {
  **/
 int wini_receive(message_t *m) {
 	proc_t *p = current_proc->sender_q;
-	
-	//If a process is waiting to send to this process, deliver it immediately.			
-	if(p != NULL) {		
+
+	//If a process is waiting to send to this process, deliver it immediately.
+	if(p != NULL) {
 		//Dequeue head node
 		current_proc->sender_q = p->next_sender;
-		
+
 		//Copy message to this process
 		*m = *(p->message);
-		
+
 		//Unblock sender
 		p->flags &= ~SENDING;
 		enqueue_head(ready_q[p->priority], p);
@@ -365,25 +401,25 @@ int wini_receive(message_t *m) {
  **/
 void init_proc() {
 	int i;
-	
+
 	//Initialise queues
 	for(i = 0; i < NUM_QUEUES; i++) {
 		ready_q[i][HEAD] = NULL;
 		ready_q[i][TAIL] = NULL;
 	}
-	
+
 	free_proc[HEAD] = free_proc[TAIL] = NULL;
-	
+
 	//Add all proc structs to the free list
 	for(i = 0; i < NUM_PROCS; i++) {
 		proc_t *p = &proc_table[i];
-		
+
 		p->state = DEAD;
-		
+
 		enqueue_tail(free_proc, p);
 		proc_table[i].proc_index = i;
 	}
-	
+
 	//No current process yet.
 	current_proc = NULL;
 }

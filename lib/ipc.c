@@ -19,7 +19,10 @@ int wramp_syscall(int operation, ...);
  * Sends a message to the destination process
  **/
 int winix_send(int dest, message_t *m) {
+	//int i = 0;
 	return wramp_syscall(WINIX_SEND, dest, m);
+	//printf("wramp syscall response %d\r\n",i );
+	//return i;
 }
 
 /**
@@ -32,9 +35,12 @@ int winix_receive(message_t *m) {
 
 /**
  * Sends and receives a message to/from the destination process.
- * 
+ *
  * Note: overwrites m with the reply message.
  **/
 int winix_sendrec(int dest, message_t *m) {
+	//int i = 0;
 	return wramp_syscall(WINIX_SENDREC, dest, m);
+	//printf("wramp syscall response %d\r\n",i );
+	//return i;
 }

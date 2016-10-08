@@ -16,6 +16,7 @@
 #define SYSCALL_PS			3
 #define SYSCALL_UPTIME		4
 #define SYSCALL_EXIT		5
+#define SYSCALL_PROCESS_OVERVIEW		6
 //TODO: create a sensible allocation scheme for system call numbers
 
 /**

@@ -4,7 +4,7 @@
  * Revision History:
  *  2016-09-19		Paul Monigatti			Original
  **/
- 
+
 #include <sys/syscall.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -16,6 +16,7 @@ int ps(int argc, char **argv);
 int uptime(int argc, char **argv);
 int shutdown(int argc, char **argv);
 int exit(int argc, char **argv);
+int overview(int argc, char **argv);
 int generic(int argc, char **argv);
 
 //Input buffer & tokeniser
@@ -34,6 +35,7 @@ struct cmd commands[] = {
 	{ "uptime", uptime },
 	{ "shutdown", shutdown },
 	{ "exit", exit },
+	{ "overview", overview },
 	{ NULL, generic }
 };
 //TODO: ps/uptime/shutdown should be moved to separate programs.
@@ -53,23 +55,31 @@ int ps(int argc, char **argv) {
 	return 0;
 }
 
+
+int overview(int argc, char **argv){
+	int i = 0;
+	i = sys_process_overview();
+	printf("end of sys_process_overview\r\n" );
+	return 0;
+}
+
 /**
  * Prints the system uptime
  **/
 int uptime(int argc, char **argv) {
 	int ticks, days, hours, minutes, seconds;
-	
+
 	ticks = sys_uptime();
 	seconds = ticks / 60; //TODO: define tick rate somewhere
 	minutes = seconds / 60;
 	hours = minutes / 60;
 	days = hours / 24;
-	
+
 	seconds %= 60;
 	minutes %= 60;
 	hours %= 24;
 	ticks %= 100;
-	
+
 	printf("Uptime is %dd %dh %dm %d.%ds\r\n", days, hours, minutes, seconds, ticks);
 	return 0;
 }
@@ -97,9 +107,9 @@ int generic(int argc, char **argv) {
 	//Quietly ignore empty file paths
 	if(argc == 0)
 		return 0;
-	
+
 	//TODO: fork/exec program at argv[0]
-	
+
 	printf("Unknown command '%s'\r\n", argv[0]);
 	return -1;
 }
@@ -109,53 +119,53 @@ void shell_main() {
 	int argc;
 	char *c;
 	struct cmd *handler = NULL;
-	
+
 	while(1) {
 		printf("WINIX> ");
-		
+
 		//Read line from terminal
 		for(i = 0; i < BUF_LEN - 1; i++) {
 			buf[i] = getc(); 	//read
-			
+
 			if(buf[i] == '\r') { //test for end
 				break;
 			}
-			
+
 			putc(buf[i]); 		//echo
 		}
 		buf[++i] = '\0';
 		printf("\r\n");
-				
+
 		//Tokenise command
 		//TODO: proper parsing of arguments
 		argc = 0;
 		c = buf;
 		while(*c) {
-			
+
 			//Skip over non-alphanumeric characters
 			while(*c && !isPrintable(*c))
 				c++;
-			
+
 			//Add new token
 			if(*c != '\0') {
 				tokens[argc++] = c;
 			}
-			
+
 			//Skip over alphanumeric characters
 			while(*c && isPrintable(*c))
 				c++;
-			
+
 			if(*c != '\0') {
 				*c++ = '\0';
 			}
 		}
-		
+
 		//Decode command
 		handler = commands;
 		while(handler->name != NULL && strcmp(tokens[0], handler->name)) {
 			handler++;
 		}
-		
+
 		//Run it
 		handler->handle(argc, tokens);
 	}
