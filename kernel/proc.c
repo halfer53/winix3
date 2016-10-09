@@ -20,12 +20,19 @@ static proc_t *ready_q[NUM_QUEUES][2];
 //Entries in the process table that are not in use
 static proc_t *free_proc[2];
 
+//Entries to the list of unallocated memory space in RAM
+static hole_t *holes[2];
+
 //The currently-running process
 proc_t *current_proc;
 
 //Process Stacks
 //TODO: dynamically allocate stacks during exec system call.
-static unsigned long proc_stacks[NUM_PROCS][DEFAULT_STACK_SIZE];
+//static unsigned long proc_stacks[NUM_PROCS][DEFAULT_STACK_SIZE];
+
+//Limits for memory allocation
+unsigned long FREE_MEM_BEGIN = 0;
+unsigned long FREE_MEM_END = 0;
 
 /**
  * Adds a proc to the tail of a list.
@@ -61,10 +68,6 @@ static void enqueue_head(proc_t **q, proc_t *proc) {
 		proc->next = q[HEAD];
 		q[HEAD] = proc;
 	}
-}
-
-static void do_nothing(){
-
 }
 
 /**
@@ -108,6 +111,7 @@ static proc_t *dequeue(proc_t **q) {
 static proc_t *get_free_proc() {
 	int i;
 	proc_t *p = dequeue(free_proc);
+	size_t *sp = NULL;
 
 	if(p) {
 		//Clear register values
@@ -116,12 +120,17 @@ static proc_t *get_free_proc() {
 		}
 
 		//Clear stack
-		for(i = 0; i < DEFAULT_STACK_SIZE; i++) {
-			proc_stacks[p->proc_index][i] = DEFAULT_MEM_VALUE;
-		}
+		// for(i = 0; i < DEFAULT_STACK_SIZE; i++) {
+		// 	proc_stacks[p->proc_index][i] = DEFAULT_MEM_VALUE;
+		// }
+		//
+		// //Initialise state
+		// p->sp = proc_stacks[p->proc_index];
 
-		//Initialise state
-		p->sp = proc_stacks[p->proc_index];
+
+		p->sp = (size_t *)p_malloc(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
+		assert(p->sp != NULL,"sp is null");
+
 		p->sp += DEFAULT_STACK_SIZE; //start at the "top" of the stack
 		p->ra = DEFAULT_RETURN_ADDR;
 		p->pc = DEFAULT_PROGRAM_COUNTER;
@@ -167,7 +176,50 @@ static proc_t *pick_proc() {
 }
 
 
+void Scan_FREE_MEM_BEGIN(){
+	FREE_MEM_BEGIN = (unsigned long)&BSS_END;
 
+	//Round up to the next 1k boundary
+	FREE_MEM_BEGIN |= 0x03ff;
+	FREE_MEM_BEGIN++;
+
+	//Search for upper limit
+	//Note: this doubles as a memory test.
+	// for(FREE_MEM_END = FREE_MEM_BEGIN; ; FREE_MEM_END++) {
+	// 	*(unsigned long*)FREE_MEM_END = FREE_MEM_END; //Write address to memory location
+	// 	if(*(unsigned long*)FREE_MEM_END != FREE_MEM_END) { //Check that the value was remembered
+	// 		break;
+	// 	}
+	//
+	// 	if(!(FREE_MEM_END & 0x1fff)) { //print '.' every 8k
+	// 		putc('.');
+	// 	}
+	// }
+	//
+	// //Wind back to the highest 1k block
+	// FREE_MEM_END &= (unsigned long)~0x3ff;
+	// FREE_MEM_END--;
+	printf("\r\nfree memory begin 0x%x\r\n",FREE_MEM_BEGIN );
+}
+
+
+
+
+void *p_malloc(size_t size){
+	size_t temp = FREE_MEM_BEGIN;
+	if (FREE_MEM_END != 0) {
+		//if FREE_MEM_END is not null, then that means the OS is running
+		//otherwise it's initialising, thus FREE_MEM_END is not set yet
+		//we just assume there is enough memory during the start up
+		//since calculating FREE_MEM_END during the start up is gonna crash the system for some unknown reason
+		if (size + FREE_MEM_BEGIN > FREE_MEM_END) {
+			return NULL;
+		}
+	}
+
+	FREE_MEM_BEGIN += size;
+	return (void *)temp;
+}
 
 
 int fork_current_proc(){
@@ -325,6 +377,10 @@ void end_process(proc_t *p) {
 	 enqueue_tail(free_proc, p);
 }
 
+//print out the list of processes currently in the ready_q
+//and the currently running process
+//return 0;
+
 int process_overview(){
 	int i=0;
 	proc_t *curr = NULL;
@@ -344,10 +400,12 @@ int process_overview(){
 	return 0;
 }
 
+//print the process state given
 void printProceInfo(proc_t* curr){
 	printf("name %s, proc_index %d, Stack_Address 0x%x, state %s\r\n",curr->name, curr->proc_index, curr->sp,getStateName(curr->state));
 }
 
+//return the strign value of state name give proc_state_t state
 char* getStateName(proc_state_t state){
 	switch (state) {
 		case DEAD: return "DEAD";
@@ -494,7 +552,7 @@ int wini_receive(message_t *m) {
  **/
 void init_proc() {
 	int i;
-
+	printf("0 \r\n" );
 	//Initialise queues
 	for(i = 0; i < NUM_QUEUES; i++) {
 		ready_q[i][HEAD] = NULL;
@@ -502,7 +560,7 @@ void init_proc() {
 	}
 
 	free_proc[HEAD] = free_proc[TAIL] = NULL;
-
+	printf("1 \r\n" );
 	//Add all proc structs to the free list
 	for(i = 0; i < NUM_PROCS; i++) {
 		proc_t *p = &proc_table[i];

@@ -6,3 +6,4 @@ RexSimulatorGui.exe
 *.o
 *.s
 *.srec
+test

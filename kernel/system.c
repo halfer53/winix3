@@ -9,10 +9,6 @@
 #include <stdio.h>
 #include <sys/syscall.h>
 
-//Limits for memory allocation
-unsigned long FREE_MEM_BEGIN = 0;
-unsigned long FREE_MEM_END = 0;
-
 
 /**
  * Scans the free memory and sets the globals FREE_MEM_BEGIN and FREE_MEM_END.
@@ -24,11 +20,11 @@ unsigned long FREE_MEM_END = 0;
  *   Characters are printed using putc.
  **/
 static void scan_memory() {
-	FREE_MEM_BEGIN = (unsigned long)&BSS_END;
-
-	//Round up to the next 1k boundary
-	FREE_MEM_BEGIN |= 0x03ff;
-	FREE_MEM_BEGIN++;
+	// FREE_MEM_BEGIN = (unsigned long)&BSS_END;
+	//
+	// //Round up to the next 1k boundary
+	// FREE_MEM_BEGIN |= 0x03ff;
+	// FREE_MEM_BEGIN++;
 
 	//Search for upper limit
 	//Note: this doubles as a memory test.

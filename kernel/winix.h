@@ -12,6 +12,7 @@
 #include <sys/ipc.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <type.h>
 
 #include "wramp.h"
 #include "proc.h"

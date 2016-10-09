@@ -40,7 +40,7 @@ typedef enum { DEAD, INITIALISING, RUNNABLE, ZOMBIE } proc_state_t;
 
 /**
  * Process structure for use in the process table.
- * 
+ *
  * Note: 	Do not update this structure without also
  * 			updating the definitions in "wramp.s"
  **/
@@ -53,35 +53,42 @@ typedef struct proc {
 	void *rbase;
 	unsigned long *ptable;
 	unsigned long cctrl;
-	
+
 	/* Protection */
 	unsigned long protection_table[PROTECTION_TABLE_LEN];
-	
+
 	/* Scheduling */
 	int priority;		//Default priority
 	int quantum;		//Timeslice length
 	int ticks_left;		//Timeslice remaining
 	struct proc *next;	//Next pointer
-	
+
 	/* IPC */
 	struct proc *sender_q;	//Head of process queue waiting to send to this process
 	struct proc *next_sender; //Link to next sender in the queue
 	message_t *message;	//Message buffer;
-	
+
 	/* Accounting */
-	int time_used;		//CPU time used	
-	
+	int time_used;		//CPU time used
+
 	/* Metadata */
 	char name[PROC_NAME_LEN];		//Process name
 	proc_state_t state;	//Current process state
 	int flags;
-	
+
 	/* Process Table Index */
 	int proc_index;		//Index in the process table
 } proc_t;
 
 //The process table.
 extern proc_t proc_table[NUM_PROCS];
+
+//list of holes in the memory space
+typedef struct _holes{
+	unsigned long start;
+	unsigned long end;
+	struct _holes *next;
+} hole_t;
 
 /**
  * Initialises the process table and scheduling queues.
@@ -116,6 +123,26 @@ void end_process(proc_t *p);
  **/
 proc_t *get_proc(int proc_nr);
 
+//Scan memory,
+//side effect: FREE_MEM_BEGIN is initialised
+//and holes is initialised
+void Scan_FREE_MEM_BEGIN();
+
+//allocate heap memory given the size of memory,
+//side effect : a new memory of the given size is allocated from FREE_MEM_BEGIN
+//the reference (top of the heap) is returned as the pointer
+void *p_malloc(size_t size);
+
+
+//fork the next process in the ready_q, return the new proc_index of the forked process
+//side effect: the head of the free_proc is dequeued, and added to the ready_q with all relevant values equal
+//to the original process, except stack pointer.
+int fork_current_proc();
+
+
+int process_overview();
+void printProceInfo(proc_t* curr);
+char* getStateName(proc_state_t state);
 /**
  * Receives a message.
  *
