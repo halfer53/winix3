@@ -552,7 +552,6 @@ int wini_receive(message_t *m) {
  **/
 void init_proc() {
 	int i;
-	printf("0 \r\n" );
 	//Initialise queues
 	for(i = 0; i < NUM_QUEUES; i++) {
 		ready_q[i][HEAD] = NULL;
@@ -560,7 +559,6 @@ void init_proc() {
 	}
 
 	free_proc[HEAD] = free_proc[TAIL] = NULL;
-	printf("1 \r\n" );
 	//Add all proc structs to the free list
 	for(i = 0; i < NUM_PROCS; i++) {
 		proc_t *p = &proc_table[i];
