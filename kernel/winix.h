@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <type.h>
+#include <util.h>
 
 #include "wramp.h"
 #include "proc.h"

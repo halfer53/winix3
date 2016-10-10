@@ -83,20 +83,20 @@ void system_main() {
 				break;
 
 			//Exits the current process.
-			// case SYSCALL_EXIT:
-			// 	printf("\r\n[SYSTEM] Process \"%s (%d)\" exited with code %d\r\n", p->name, p->proc_index, m.i1);
-			// 	//TODO: keep process in zombie state until parent calls wait, so the exit value can be retrieved
-			// 	end_process(p);
-			// 	break;
+			case SYSCALL_EXIT:
+				printf("\r\n[SYSTEM] Process \"%s (%d)\" exited with code %d\r\n", p->name, p->proc_index, m.i1);
+				//TODO: keep process in zombie state until parent calls wait, so the exit value can be retrieved
+				end_process(p);
+				break;
 
 			case SYSCALL_PROCESS_OVERVIEW:
 				response = process_overview();
 				break;
 
 			case SYSCALL_FORK:
-				response = fork_current_proc();
-				m.i1 = response;
-				winix_send(who, &m);
+				response = fork_proc(p);
+				//m.i1 = response;
+				//winix_send(who, &m);
 				break;
 
 			//System call number is unknown, or not yet implemented.

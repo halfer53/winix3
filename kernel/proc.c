@@ -222,89 +222,70 @@ void *p_malloc(size_t size){
 }
 
 
-int fork_current_proc(){
-	proc_t *original = NULL;
+int fork_proc(proc_t *p1){
+	proc_t *original = p1;
 	proc_t *p = NULL;
-	char* original_name;
+	int priority = 0;
+
 	int i = 0;
-	char buffer[PROC_NAME_LEN];
 
-	for(i = 0; i < NUM_QUEUES; i++) {
-		if(ready_q[i][HEAD] != NULL) {
-			original = ready_q[i][HEAD];
+	if(p = get_free_proc()) {
+		for(i = 0;i<NUM_REGS;i++){
+			p->regs[i] = original->regs[i];
 		}
+		p->priority = original->priority;
+		p->pc = original->pc;
+		p->ra = original->ra;
+		p->rbase = original->rbase;
+		p->cctrl = original->cctrl;
+
+		//Initialise protection table
+		//TODO: this loop allows unrestricted access to all memory.
+		//Update to only enable memory blocks belonging to the process.
+		p->ptable = p->protection_table;
+		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
+			p->protection_table[i] = 0xffffffff;
+		}
+
+		priority = p->priority = original->priority;
+		p->quantum = original->quantum;
+		p->ticks_left = original->ticks_left;
+		p->next = original->next;
+		p->sender_q = original->sender_q;
+		p->next_sender = original->next_sender;
+		p->message = original->message;
+
+		p->time_used = original->time_used;
+
+		strcpy(p->name,"fork_");
+ 	 	strcat(p->name,original->name);
+
+		//Set the process to runnable, and enqueue it.
+		p->state = RUNNABLE;
+
+		p->flags = original->flags;
+		process_overview();
+		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		enqueue_tail(ready_q[priority], p);
+		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		process_overview();
 	}
-
-	original_name = original->name;
-		buffer[0] = 'f';
-		buffer[1] = 'o';
-		buffer[2] = 'r';
-		buffer[3] = 'k';
-		buffer[4] = '_';
-		//TODO: replace with strncpy
-		for(i = 5; i < PROC_NAME_LEN; i++) {
-			buffer[i] = *original_name;
-
-			if(*original_name++ == '\0') {
-				break;
-			}
-	}
-
-	p = new_proc(original->pc, original->priority, buffer);
 	assert(p != NULL, "Fork");
-	p->ra = original->ra;
-	p->pc = original->pc;
-	p->cctrl = original->cctrl;
-	printf("original\r\n");
-	printProceInfo(original);
-	printf("forked\r\n");
-	printProceInfo(p);
 
-
-	//error
-	//original = &proc_table[2]; would cause error, but [0] wouldn't
-	//original = &proc_table[4]; //fork shell.c
-	// original_name = original->name;
-	// if (p = get_free_proc()) {
-	// 	//sp is set to the new process
-	// 	p->ra = original->ra;
-	// 	p->pc = original->pc;
-	// 	p->cctrl = original->cctrl;
-	// 	//TODO
-	// 	//set up rbase and ptable instead of copying off the original one
-	// 	p->rbase = original->rbase;
-	//
-	// 	//p->ptable = original->ptable;
-	//
-	// 	//Initialise protection table
-	// 	//TODO: this loop allows unrestricted access to all memory.
-	// 	//Update to only enable memory blocks belonging to the process.
-	// 	p->ptable = p->protection_table;
-	// 	for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
-	// 		p->protection_table[i] = 0xffffffff;
-	// 	}
-	//
-	// 	p->name[0] = 'f';
-	// 	p->name[1] = 'o';
-	// 	p->name[2] = 'r';
-	// 	p->name[3] = 'k';
-	// 	p->name[4] = '_';
-	// 	//TODO: replace with strncpy
-	// 	for(i = 5; i < PROC_NAME_LEN; i++) {
-	// 		p->name[i] = *original_name;
-	//
-	// 		if(*original_name++ == '\0') {
-	// 			break;
-	// 		}
-	// 	}
-	//
-	// 	p->priority = original->priority;
-	// 	p->quantum = original->quantum;
-	// 	//ticks_left and time_used is set to default
-	// 	p->state = RUNNABLE;
-	// 	//flags, sender_q, next_sender, and message is set to default
-	// 	enqueue_tail(ready_q[p->priority],p);
+	// printf("original ptable %x\r\n",(void*)&(original->ptable));
+	// for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
+	// 	printf("0x%x ",(unsigned long)original->protection_table[i]);
 	// }
+	// printf("\r\nnew ptable %x\r\n",(void*)&(p->ptable));
+	// for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
+	// 	printf("0x%x ",(unsigned long)p->protection_table[i]);
+	// }
+
+	// printf("\r\noriginal ");
+	// printProceInfo(original);
+	// printf("forked");
+	// printProceInfo(p);
+
 	return p->proc_index;
 }
 
@@ -338,14 +319,7 @@ proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 		p->priority = priority;
 		p->pc = entry;
 
-		//TODO: replace with strncpy
-		for(i = 0; i < PROC_NAME_LEN; i++) {
-			p->name[i] = *name;
-
-			if(*name++ == '\0') {
-				break;
-			}
-		}
+		strcpy(p->name,name);
 
 		//Initialise protection table
 		//TODO: this loop allows unrestricted access to all memory.
@@ -385,11 +359,11 @@ int process_overview(){
 	int i=0;
 	proc_t *curr = NULL;
 	if (current_proc != NULL) {
-		printf("current_proc sp 0x%x name %s state %s\r\n", current_proc->sp,current_proc->name,getStateName(current_proc->state));
+		printf("\r\ncurrent_proc sp 0x%x name %s state %s\r\n", current_proc->sp,current_proc->name,getStateName(current_proc->state));
 	}
 	for (i=0; i < NUM_QUEUES; i++) {
 		if (ready_q[i][HEAD] != NULL) {
-			printf("priority %d\r\n",i );
+			printf("\r\npriority %d\r\n",i );
 			curr = ready_q[i][HEAD];
 			while(curr != NULL){
 				printProceInfo(curr);
@@ -539,6 +513,7 @@ int wini_receive(message_t *m) {
 		current_proc->message = m;
 		current_proc->flags |= RECEIVING;
 	}
+	return 0;
 }
 
 /**

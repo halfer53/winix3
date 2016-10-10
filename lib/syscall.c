@@ -47,6 +47,6 @@ int sys_fork(){
 	message_t m;
 
 	m.type = SYSCALL_FORK;
-	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-	return m.i1;
+	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
+	return 0;
 }

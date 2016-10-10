@@ -78,6 +78,7 @@ typedef struct proc {
 
 	/* Process Table Index */
 	int proc_index;		//Index in the process table
+
 } proc_t;
 
 //The process table.
@@ -137,7 +138,7 @@ void *p_malloc(size_t size);
 //fork the next process in the ready_q, return the new proc_index of the forked process
 //side effect: the head of the free_proc is dequeued, and added to the ready_q with all relevant values equal
 //to the original process, except stack pointer.
-int fork_current_proc();
+int fork_proc(proc_t *p);
 
 
 int process_overview();

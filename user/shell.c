@@ -16,7 +16,6 @@ int ps(int argc, char **argv);
 int uptime(int argc, char **argv);
 int shutdown(int argc, char **argv);
 int exit(int argc, char **argv);
-int overview(int argc, char **argv);
 int fork(int argc, char **argv);
 int exec(int argc, char **argv);
 int generic(int argc, char **argv);
@@ -36,7 +35,7 @@ struct cmd commands[] = {
 	{ "uptime", uptime },
 	{ "shutdown", shutdown },
 	{ "exit", exit },
-	{ "overview", overview },
+	{ "ps", ps },
 	{ "fork", fork },
 	{ "exec", exec },
 	{ NULL, generic }
@@ -50,37 +49,6 @@ int isPrintable(int c) {
 	return ('!' <= c && c <= '~');
 }
 
-int hex2int(char *a, int len)
-{
-    int i;
-    int val = 0;
-
-    for(i=0;i<len;i++){
-			if(a[i] <= 57)
-			 val += (a[i]-48)*(1<<(4*(len-1-i)));
-			else
-			 val += (a[i]-55)*(1<<(4*(len-1-i)));
-		}
-
-    return val;
-}
-
-int Substring(char* buffer,char* original,int start_index,int length){
-	int i = 0;
-	int count = 0;
-	for(i = start_index; i<length+start_index; i++)
-  {
-				if (original[i] == '\0') {
-					printf("End of string reached in Substring, original %s, start_index %d,length %d\r\n",original,start_index,length );
-					break;
-				}
-        buffer[count] = original[i];
-				count++;
-  }
-	buffer[count] = '\0';
-	return count;
-}
-
 
 int exec(int argc, char **argv){
 
@@ -92,7 +60,7 @@ int fork(int argc, char **argv){
 	return 0;
 }
 
-int overview(int argc, char **argv){
+int ps(int argc, char **argv){
 	return sys_process_overview();
 }
 

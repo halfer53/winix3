@@ -124,12 +124,14 @@ int exec(int argc, char **argv){
 				tempBufferCount = Substring(buffer,line,index,2);
 				//printf("record value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				byteCount = hex2int(buffer,tempBufferCount);
+        index += 2;
+        checksum += byteCount;
 
 				//byteCount = ((int)line[index++])*10 + ((int)line[index++]);
 				//int byteCount = Convert.ToInt32(line.Substring(index, 2), 16);
 				//printf("byteCount %d\r\n",byteCount);
 
-				//checksum += byteCount;
+
 
 				//Address, 4, 6 or 8 hex digits determined by the record type
 				for (i = 0; i < addressLength; i++)
@@ -145,13 +147,15 @@ int exec(int argc, char **argv){
 				address = hex2int(buffer,tempBufferCount);
 
 				//address = Convert.ToInt32(line.Substring(index, addressLength * 2), 16);
-				index += addressLength * 2;
-				byteCount -= addressLength;
-
+        //printf("index %d\n",index );
+        index += addressLength * 2;
+        //printf("index %d\n",index );
+				byteCount -= addressLength ;
+        //printf("byteCount %d\n",byteCount );
 				//Data, a sequence of bytes.
 				//data.length = 255
 				assert(byteCount<255,"byteCount bigger than 255");
-				for (i = 0; i < byteCount; i++)
+				for (i = 0; i < byteCount-1; i++)
 				{
 						tempBufferCount = Substring(buffer,line,index,2);
 						//printf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
@@ -168,7 +172,7 @@ int exec(int argc, char **argv){
 				//printf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				readChecksum = hex2int(buffer,tempBufferCount);
         //printf("checksum %d\r\n",checksum );
-				byteCheckSum = (checksum & 0xFF);
+				byteCheckSum = (byte)(checksum & 0xFF);
         //printf("checksum %d\r\n",byteCheckSum );
         byteCheckSum = ~byteCheckSum;
         //printf("checksum %d\r\n",byteCheckSum );
@@ -180,20 +184,23 @@ int exec(int argc, char **argv){
 				//Put in memory
 				assert((byteCount-1) % 4 == 0, "Data should only contain full 32-bit words.");
         //printf("recordType %d\n", recordType);
+        //printf("%lu\n",(unsigned long)data[0] );
+        //printf("byteCount %d\n",byteCount );
         switch (recordType)
 				{
 						case 3: //data intended to be stored in memory.
 
-								for (i = 0; i < byteCount; i += 4)
+								for (i = 0; i < byteCount-1; i += 4)
 								{
 										memVal = 0;
 										for (j = i; j < i + 4; j++)
 										{
+
 												memVal <<= 8;
 												memVal |= data[j];
 										}
 										wordsLoaded++;
-										printf("mem content %lu\n",memVal );
+										printf("0x%08x\n",(unsigned int)memVal );
 								}
 
 								// mAddressBus.IsWrite = true;
@@ -211,7 +218,6 @@ int exec(int argc, char **argv){
 								// CPU.PC = (uint)address;
 								break;
 				}
-        printf("\r\n" );
         if (linecount >= 5) {
           break;
         }
