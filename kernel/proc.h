@@ -11,11 +11,13 @@
 //Process & Scheduling
 #define PROC_NAME_LEN			20
 #define NUM_PROCS				20
+#define NUM_HOLES				10
 #define NUM_QUEUES				5
 #define IDLE_PRIORITY			4
 #define USER_PRIORITY			3
 #define SYSTEM_PRIORITY			0
 
+#define MAX_MEM_END			131071 //0x1ffff
 //Process Defaults
 #define DEFAULT_FLAGS			0
 #define PROTECTION_TABLE_LEN	32
@@ -87,7 +89,7 @@ extern proc_t proc_table[NUM_PROCS];
 //list of holes in the memory space
 typedef struct _holes{
 	unsigned long start;
-	unsigned long end;
+	unsigned long length;
 	struct _holes *next;
 } hole_t;
 
@@ -132,8 +134,9 @@ void Scan_FREE_MEM_BEGIN();
 //allocate heap memory given the size of memory,
 //side effect : a new memory of the given size is allocated from FREE_MEM_BEGIN
 //the reference (top of the heap) is returned as the pointer
-void *p_malloc(size_t size);
+void *new_stack(size_t size);
 
+//void *p_malloc(size_t size);
 
 //fork the next process in the ready_q, return the new proc_index of the forked process
 //side effect: the head of the free_proc is dequeued, and added to the ready_q with all relevant values equal

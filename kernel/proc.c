@@ -20,21 +20,27 @@ static proc_t *ready_q[NUM_QUEUES][2];
 //Entries in the process table that are not in use
 static proc_t *free_proc[2];
 
+hole_t hole_table[NUM_HOLES];
+
 //Entries to the list of unallocated memory space in RAM
-static hole_t *holes[2];
+static hole_t *sys_holes[2];
+
+//ENtries in the holes that are not in use, but can be added to the holes list
+static hole_t *pending_holes[2];
 
 //The currently-running process
 proc_t *current_proc;
 
 //OLD Process Stacks
-//static unsigned long proc_stacks[NUM_PROCS][DEFAULT_STACK_SIZE];
+//static size_t proc_stacks[NUM_PROCS][DEFAULT_STACK_SIZE];
 
 //Limits for memory allocation
-unsigned long FREE_MEM_BEGIN = 0;
-unsigned long FREE_MEM_END = 0;
+size_t FREE_MEM_BEGIN = 0;
+size_t FREE_MEM_END = 0;
 
 //temprary holder for newly exec process's pc
-unsigned long exec_pc = 0;
+size_t exec_pc = 0;
+
 
 /**
  * Adds a proc to the tail of a list.
@@ -100,6 +106,52 @@ static proc_t *dequeue(proc_t **q) {
 	return p;
 }
 
+
+
+
+//hole enqueue tail
+static void hole_enqueue_tail(hole_t **q, hole_t *proc) {
+	if(q[HEAD] == NULL) {
+		q[HEAD] = q[TAIL] = proc;
+	}
+	else {
+		q[TAIL]->next = proc;
+		q[TAIL] = proc;
+	}
+	proc->next = NULL;
+}
+
+//hole enqueue head
+static void hole_enqueue_head(hole_t **q, hole_t *proc) {
+	if(q[HEAD] == NULL) {
+		proc->next = NULL;
+		q[HEAD] = q[TAIL] = proc;
+	}
+	else {
+		proc->next = q[HEAD];
+		q[HEAD] = proc;
+	}
+}
+
+//hold deque
+static hole_t *hole_dequeue(hole_t **q) {
+	hole_t *p = q[HEAD];
+
+	if(p == NULL) { //Empty list
+		assert(q[TAIL] == NULL, "deq: tail not null");
+		return NULL;
+	}
+
+	if(q[HEAD] == q[TAIL]) { //Last item
+		q[HEAD] = q[TAIL] = NULL;
+	}
+	else { //At least one remaining item
+		q[HEAD] = p->next;
+	}
+	p->next = NULL;
+	return p;
+}
+
 /**
  * Gets a proc struct that isn't currently in use.
  *
@@ -130,10 +182,9 @@ static proc_t *get_free_proc() {
 		// p->sp = proc_stacks[p->proc_index];
 
 
-		p->sp = (size_t *)p_malloc(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
+		p->sp = (size_t *)new_stack(DEFAULT_STACK_SIZE);
 		assert(p->sp != NULL,"sp is null");
 
-		p->sp += DEFAULT_STACK_SIZE; //start at the "top" of the stack
 		p->ra = DEFAULT_RETURN_ADDR;
 		p->pc = DEFAULT_PROGRAM_COUNTER;
 		p->rbase = DEFAULT_RBASE;
@@ -179,7 +230,7 @@ static proc_t *pick_proc() {
 
 
 void Scan_FREE_MEM_BEGIN(){
-	FREE_MEM_BEGIN = (unsigned long)&BSS_END;
+	FREE_MEM_BEGIN = (size_t)&BSS_END;
 
 	//Round up to the next 1k boundary
 	FREE_MEM_BEGIN |= 0x03ff;
@@ -188,8 +239,8 @@ void Scan_FREE_MEM_BEGIN(){
 	//Search for upper limit
 	//Note: this doubles as a memory test.
 	// for(FREE_MEM_END = FREE_MEM_BEGIN; ; FREE_MEM_END++) {
-	// 	*(unsigned long*)FREE_MEM_END = FREE_MEM_END; //Write address to memory location
-	// 	if(*(unsigned long*)FREE_MEM_END != FREE_MEM_END) { //Check that the value was remembered
+	// 	*(size_t*)FREE_MEM_END = FREE_MEM_END; //Write address to memory location
+	// 	if(*(size_t*)FREE_MEM_END != FREE_MEM_END) { //Check that the value was remembered
 	// 		break;
 	// 	}
 	//
@@ -199,30 +250,77 @@ void Scan_FREE_MEM_BEGIN(){
 	// }
 	//
 	// //Wind back to the highest 1k block
-	// FREE_MEM_END &= (unsigned long)~0x3ff;
+	// FREE_MEM_END &= (size_t)~0x3ff;
 	// FREE_MEM_END--;
 	printf("\r\nfree memory begin 0x%x\r\n",FREE_MEM_BEGIN );
 }
 
 
 
+//create a chunk of memory for the use of new stack
+//return the end of the newly allocated space as stack pointer
+void *new_stack(size_t size){
+	// size_t temp = FREE_MEM_BEGIN;
+	// if (FREE_MEM_END != 0) {
+	// 	//if FREE_MEM_END is not null, then that means the OS is running
+	// 	//otherwise it's initialising, thus FREE_MEM_END is not set yet
+	// 	//we just assume there is enough memory during the start up
+	// 	//since calculating FREE_MEM_END during the start up is gonna crash the system for some unknown reason
+	// 	if (size + FREE_MEM_BEGIN > FREE_MEM_END) {
+	// 		return NULL;
+	// 	}
+	// }
+	//
+	// FREE_MEM_BEGIN += size;
+	// return (void *)temp;
 
-void *p_malloc(size_t size){
-	size_t temp = FREE_MEM_BEGIN;
+	hole_t *h = NULL;
+	size_t start = 0;
+	size_t hole_length = 0;
+	size_t mem_end = 0;
+	int counter = 0;
+	do{
+		h = hole_dequeue(sys_holes);
+		assert(h!=NULL,"hole is null at 1");
+		hole_length = h->length;
+		start = h->start;
+		//if hole length is smaller than the required size
+		if (hole_length < size) {
+			hole_enqueue_tail(sys_holes,h);
+		}
+		if (counter > 3) {
+			break;
+		}
+		counter++;
+	}while(hole_length < size);
+
 	if (FREE_MEM_END != 0) {
 		//if FREE_MEM_END is not null, then that means the OS is running
 		//otherwise it's initialising, thus FREE_MEM_END is not set yet
 		//we just assume there is enough memory during the start up
 		//since calculating FREE_MEM_END during the start up is gonna crash the system for some unknown reason
-		if (size + FREE_MEM_BEGIN > FREE_MEM_END) {
+		if (size + h->start > FREE_MEM_END) {
 			return NULL;
 		}
 	}
+	if (FREE_MEM_BEGIN == start) {
 
-	FREE_MEM_BEGIN += size;
-	return (void *)temp;
+		FREE_MEM_BEGIN += size;
+	}
+	//reset and add it back to the pending holes list
+	mem_end = FREE_MEM_END == 0 ? MAX_MEM_END : FREE_MEM_END;
+
+	h->length = mem_end - FREE_MEM_BEGIN;
+
+	h->start = FREE_MEM_BEGIN;
+
+	hole_enqueue_head(sys_holes,h);
+	return (void *)(start+size);
 }
 
+// void *p_malloc(size_t size){
+//
+// }
 
 int fork_proc(proc_t *p1){
 	proc_t *original = p1;
@@ -276,11 +374,11 @@ int fork_proc(proc_t *p1){
 
 	// printf("original ptable %x\r\n",(void*)&(original->ptable));
 	// for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
-	// 	printf("0x%x ",(unsigned long)original->protection_table[i]);
+	// 	printf("0x%x ",(size_t)original->protection_table[i]);
 	// }
 	// printf("\r\nnew ptable %x\r\n",(void*)&(p->ptable));
 	// for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
-	// 	printf("0x%x ",(unsigned long)p->protection_table[i]);
+	// 	printf("0x%x ",(size_t)p->protection_table[i]);
 	// }
 
 	// printf("\r\noriginal ");
@@ -519,16 +617,90 @@ int wini_receive(message_t *m) {
 }
 
 
+
 int winix_exec(char* lines[],int line_length){
-	unsigned long *base = (unsigned long*)FREE_MEM_BEGIN;
+	size_t *base = (size_t*)FREE_MEM_BEGIN;
 
 	return 0;
 }
 
 
+int winix_load_srec_data_length(char *line){
+  int i=0;
+
+  int index = 0;
+	int checksum = 0;
+  byte byteCheckSum = 0;
+	int recordType = 0;
+	int byteCount = 0;
+	char buffer[128];
+	char tempBufferCount = 0;
+
+  int wordsCount = 0;
+  int length = 0;
+  int readChecksum = 0;
+  int data = 0;
+
+        index = 0;
+        checksum = 0;
+
+				printf("%s\r\n",line);
+        //printf("loop %d\n",linecount );
+				//Start code, always 'S'
+				assert(line[index++] == 'S',"Expecting S");
+
+				recordType = line[index++] - '0';
+        if (recordType == 5 || recordType == 6) {
+
+        }else{
+          printf("recordType %d\n",recordType );
+          printf("format is incorrect\n" );
+          return -1;
+        }
+        tempBufferCount = Substring(buffer,line,index,2);
+				//printf("record value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				byteCount = hex2int(buffer,tempBufferCount);
+        index += 2;
+        checksum += byteCount;
+
+				assert(byteCount<255,"byteCount bigger than 255");
+
+						tempBufferCount = Substring(buffer,line,index,(byteCount-1)*2 );
+						//printf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+						data = hex2int(buffer,tempBufferCount);
+            //printf("data %d\n", data);
+            index += (byteCount-1)*2;
+            checksum += data;
+
+				//Checksum, two hex digits. Inverted LSB of the sum of values, including byte count, address and all data.
+				//readChecksum = (byte)Convert.ToInt32(line.Substring(index, 2), 16);
+        //printf("checksum %d\n",checksum );
+				tempBufferCount = Substring(buffer,line,index,2);
+				//printf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				readChecksum = hex2int(buffer,tempBufferCount);
+        // printf("readChecksum %d\n",readChecksum );
+        // printf("checksum %d\n",checksum );
+        //printf("checksum %d\r\n",checksum );
+        if (checksum > 255) {
+          byteCheckSum = (byte)(checksum & 0xFF);
+          //printf("checksum %d\r\n",byteCheckSum );
+          byteCheckSum = ~byteCheckSum;
+        }else{
+          byteCheckSum = ~byteCheckSum;
+          byteCheckSum = checksum;
+        }
+        //printf("checksum %d\r\n",byteCheckSum );
+				if (readChecksum != byteCheckSum){
+					printf("failed checksum\r\n" );
+					return -1;
+				}
+        return data;
+}
 
 
-int winix_load_srec(char* lines[],int line_length){
+int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int wordsLength){
+	char memValues[1];
+  int wordsCount = 0;
 	int wordsLoaded = 0;
 	int index = 0;
 	int checksum = 0;
@@ -542,21 +714,12 @@ int winix_load_srec(char* lines[],int line_length){
 	byte data[255];
 	int readChecksum = 0;
 	int datalength = 0;
-	unsigned long memVal = 0;
+	size_t memVal = 0;
   int i = 0;
   int j = 0;
-  int linecount = 0;
+  int linecount = lines_start_index;
 
 	while(1){
-		//Read line from terminal
-		// for(i = 0; i < BUF_LEN - 1; i++) {
-		// 	buf[i] = getc(); 	//read
-    //
-		// 	if(buf[i] == '\r') { //test for end
-		// 		break;
-		// 	}
-		// 	putc(buf[i]); 		//echo
-		// }
 
 		char* line = lines[linecount];
     linecount++;
@@ -583,10 +746,14 @@ int winix_load_srec(char* lines[],int line_length){
 				{
 						case 0:
 						case 1:
-						case 5:
 						case 9:
 								addressLength = 2;
 								break;
+
+            case 5:
+            case 6:
+                addressLength = 0;
+                break;
 
 						case 2:
 						case 8:
@@ -623,9 +790,12 @@ int winix_load_srec(char* lines[],int line_length){
 						//string ch = line.Substring(index + i * 2, 2);
 						//checksum += Convert.ToInt32(ch, 16);
 				}
-				tempBufferCount = Substring(buffer,line,index,addressLength*2);
-				//printf("temp address value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
-				address = hex2int(buffer,tempBufferCount);
+        if (addressLength!=0) {
+          tempBufferCount = Substring(buffer,line,index,addressLength*2);
+  				//printf("temp address value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+  				address = hex2int(buffer,tempBufferCount);
+        }
+
 
 				//address = Convert.ToInt32(line.Substring(index, addressLength * 2), 16);
         //printf("index %d\n",index );
@@ -659,13 +829,13 @@ int winix_load_srec(char* lines[],int line_length){
         //printf("checksum %d\r\n",byteCheckSum );
 				if (readChecksum != byteCheckSum){
 					printf("failed checksum\r\n" );
-					return;
+					return -1;
 				}
 
 				//Put in memory
 				assert((byteCount-1) % 4 == 0, "Data should only contain full 32-bit words.");
         //printf("recordType %d\n", recordType);
-        //printf("%lu\n",(unsigned long)data[0] );
+        //printf("%lu\n",(size_t)data[0] );
         //printf("byteCount %d\n",byteCount );
         switch (recordType)
 				{
@@ -679,19 +849,26 @@ int winix_load_srec(char* lines[],int line_length){
 
 												memVal <<= 8;
 												memVal |= data[j];
+                        	//printf("0x%08x\n",(unsigned int)memVal );
 										}
+                    memValues[wordsLoaded] = memVal;
 										wordsLoaded++;
-										printf("0x%08x\n",(unsigned int)memVal );
-										//*(unsigned long*)FREE_MEM_BEGIN = (unsigned int)memVal;
-										//FREE_MEM_BEGIN++;
+
+                    if (wordsLoaded > wordsLength) {
+                      printf("words exceed max length\n" );
+                      return -1;
+                    }
+										//printf("0x%08x\n",(unsigned int)memVal );
 								}
+
 								break;
 
+
 						case 7: //entry point for the program.
-								//exec_pc = (unsigned long) address;
+								// CPU.PC = (uint)address;
 								break;
 				}
-        if (linecount >= line_length) {
+        if (linecount >= length) {
           break;
         }
 		}
@@ -712,6 +889,7 @@ int winix_load_srec(char* lines[],int line_length){
  **/
 void init_proc() {
 	int i;
+	hole_t *h = NULL;
 	//Initialise queues
 	for(i = 0; i < NUM_QUEUES; i++) {
 		ready_q[i][HEAD] = NULL;
@@ -727,6 +905,21 @@ void init_proc() {
 
 		enqueue_tail(free_proc, p);
 		proc_table[i].proc_index = i;
+	}
+
+
+	h = &hole_table[0];
+	h->start = FREE_MEM_BEGIN;
+	//2^20 SIZE OF MEMORY
+	h->length = MAX_MEM_END - FREE_MEM_BEGIN;
+	h->next = NULL;
+	hole_enqueue_head(sys_holes,h);
+	for ( i = 1; i < NUM_HOLES; i++) {
+		h = &hole_table[i];
+		h->start = 0;
+		h->length = 0;
+		h->next = NULL;
+		hole_enqueue_head(pending_holes,h);
 	}
 
 	//No current process yet.

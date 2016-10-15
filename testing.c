@@ -13,7 +13,7 @@ int main(int argc, char const *argv[]) {
 
         //exit(EXIT_SUCCESS);
 
-  char *lines[] = {"S503006467",
+  char *lines[100][128] = {"S503006467",
 	"S60303c933",
 	"S32D000000001EE300059DE000039FE000043D0E13371DDD00019DE000008DE000059DE000018DE000069DE00002DA",
 	"S32D0000000A600002360D0100010101000D8DE000038FE000041EE1000550F000001EE300059DE000039FE00004E2",
@@ -116,7 +116,7 @@ int main(int argc, char const *argv[]) {
 
   };
   for ( i = 0; i < 2; i++) {
-    temp = exec_phase1_readLength(lines[i],&recordtype);
+    temp = exec_phase1_readLength((*lines)[i],&recordtype);
     if (recordtype != 0 && temp != -1) {
       if (recordtype == 5) {
         length = temp;
@@ -131,9 +131,9 @@ int main(int argc, char const *argv[]) {
   }
   //first recordtype 5,and 6 is consumed
 
-  //printf("lenght %d\n",length );
+  printf("lenght %d\n",length );
   i = exec_phase2(lines,length,2,wordslength);
-  //printf("wordsLoaded %d\n", i);
+  printf("wordsLoaded %d\n", i);
   return 0;
 
 }
@@ -243,7 +243,8 @@ int exec_phase1_readLength(char *line, int* type){
 				}
         return data;
 }
-
+//*(unsigned long*)FREE_MEM_BEGIN = (unsigned int)memVal;
+//FREE_MEM_BEGIN++;
 int exec_phase2(char *(*lines),int length,int lines_start_index,int wordsLength){
   // char* lines[] = {"S32D000000008107300090073004120000003828000DB08FFFFB600000096000000E1220000140000003810730038F",
 	// 			"S32D0000000A91073002812000139107300350F000001901FFFF199A000219930001B09FFFFE50F0000000000076C3",
@@ -282,6 +283,7 @@ int exec_phase2(char *(*lines),int length,int lines_start_index,int wordsLength)
 		// }
 
 		char* line = lines[linecount];
+    
     linecount++;
     index = 0;
     checksum = 0;
@@ -418,7 +420,7 @@ int exec_phase2(char *(*lines),int length,int lines_start_index,int wordsLength)
                       printf("words exceed max length\n" );
                       return;
                     }
-										printf("0x%08x\n",(unsigned int)memVal );
+										//printf("0x%08x\n",(unsigned int)memVal );
 								}
 
 								// mAddressBus.IsWrite = true;
