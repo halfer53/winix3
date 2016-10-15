@@ -8,10 +8,7 @@ int main(int argc, char const *argv[]) {
   int wordslength = 0;
   int temp = 0;
   int recordtype = 0;
-  char *init_code = {"S503000407",
-											"S603000205",
-											"S30D000000000101000050F00000B0",
-											"S70500000000FA"};
+
 
 
         //exit(EXIT_SUCCESS);
@@ -134,9 +131,9 @@ int main(int argc, char const *argv[]) {
   }
   //first recordtype 5,and 6 is consumed
 
-  printf("lenght %d\n",length );
+  //printf("lenght %d\n",length );
   i = exec_phase2(lines,length,2,wordslength);
-  printf("wordsLoaded %d\n", i);
+  //printf("wordsLoaded %d\n", i);
   return 0;
 
 }
@@ -421,8 +418,7 @@ int exec_phase2(char *(*lines),int length,int lines_start_index,int wordsLength)
                       printf("words exceed max length\n" );
                       return;
                     }
-                    	//printf("0x%d\n",(unsigned int)memVal );
-										//printf("0x%08x\n",(unsigned int)memVal );
+										printf("0x%08x\n",(unsigned int)memVal );
 								}
 
 								// mAddressBus.IsWrite = true;

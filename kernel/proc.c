@@ -682,24 +682,13 @@ int winix_load_srec(char* lines[],int line_length){
 										}
 										wordsLoaded++;
 										printf("0x%08x\n",(unsigned int)memVal );
-										*(unsigned long*)FREE_MEM_BEGIN = (unsigned int)memVal;
-										FREE_MEM_BEGIN++;
+										//*(unsigned long*)FREE_MEM_BEGIN = (unsigned int)memVal;
+										//FREE_MEM_BEGIN++;
 								}
-
-								// mAddressBus.IsWrite = true;
-								// for (int i = 0; i < memContents.Count; i++)
-								// {
-								// 		mDataBus.Write(memContents[i]);
-								// 		mAddressBus.Write((uint)(i + address));
-								// 		RAM.Write();
-								// 		ROM.Write();
-								// 		wordsLoaded++;
-								// }
 								break;
 
 						case 7: //entry point for the program.
-								// CPU.PC = (uint)address;
-								exec_pc = (unsigned long) address;
+								//exec_pc = (unsigned long) address;
 								break;
 				}
         if (linecount >= line_length) {
