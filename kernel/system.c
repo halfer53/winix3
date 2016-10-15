@@ -66,6 +66,7 @@ void system_main() {
 		message_t m;
 		int who;
 		proc_t *p;
+		size_t *sptr;
 		int response = 0;
 
 		//Get a message
@@ -99,6 +100,18 @@ void system_main() {
 				//winix_send(who, &m);
 				break;
 			case SYSCALL_EXEC:
+				break;
+
+			case SYSCALL_SBRK:
+				sptr = _sbrk(m.s1);
+				m.p1 = sptr;
+				winix_send(who, &m);
+				break;
+
+			case SYSCALL_MALLOC:
+				sptr = (size_t *)_malloc(m.s1);
+				m.p1 = sptr;
+				winix_send(who, &m);
 				break;
 
 			//System call number is unknown, or not yet implemented.

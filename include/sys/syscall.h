@@ -20,6 +20,8 @@
 #define SYSCALL_FORK		7
 #define SYSCALL_EXEC    8
 #define SYSCALL_LOAD_SREC    9
+#define SYSCALL_SBRK    10
+#define SYSCALL_MALLOC    11
 //TODO: create a sensible allocation scheme for system call numbers
 
 /**
@@ -31,5 +33,9 @@ int sys_uptime();
  * Exits the current process.
  **/
 int sys_exit(int status);
+int sys_process_overview();
+int fork();
+int exec(char* lines[],int length);
+
 
 #endif

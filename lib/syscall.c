@@ -42,7 +42,7 @@ int sys_process_overview(){
 	return 0;
 }
 
-int sys_fork(){
+int fork(){
 	int response = 0;
 	message_t m;
 
@@ -51,11 +51,31 @@ int sys_fork(){
 	return 0;
 }
 
-int sys_exec(char* lines[],int length){
+int exec(char* lines[],int length){
 	int response = 0;
 	message_t m;
 
 	m.type = SYSCALL_FORK;
 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 	return 0;
+}
+
+void *sbrk(unsigned long size){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_FORK;
+	m.s1 = size;
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	return m.p1;
+}
+
+void *malloc(unsigned long size){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_MALLOC;
+	m.s1 = size;
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	return m.p1;
 }

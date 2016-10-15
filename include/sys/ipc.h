@@ -16,6 +16,7 @@ typedef struct {
 	int type;
 	int i1, i2, i3;
 	void *p1, *p2, *p3;
+	unsigned long s1;
 } message_t;
 
 /**
@@ -43,7 +44,7 @@ int winix_receive(message_t *m);
 
 /**
  * Sends and receives a message to/from the destination process.
- * 
+ *
  * Note: overwrites m with the reply message.
  **/
 int winix_sendrec(int dest, message_t *m);

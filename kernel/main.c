@@ -153,6 +153,7 @@ void main() {
 
 	//scan memory, initialise FREE_MEM_BEGIN and FREE_MEM_END
 	Scan_FREE_MEM_BEGIN();
+	init_memory();
 
 	//Set up process table
 	init_proc();
