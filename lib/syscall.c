@@ -79,3 +79,12 @@ void *malloc(unsigned long size){
 	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
 	return m.p1;
 }
+
+void free(void *ptr){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_FREE;
+	m.p1 = ptr;
+	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
+}

@@ -1,5 +1,5 @@
 typedef struct _hole{
-  unsigned long start;
+  void *start;
   unsigned long length;
   struct _hole *next;
 }hole_t;

@@ -76,6 +76,11 @@ int test(int argc, char **argv){
 	*bp = 'b';
 	printf("char malloced ap addr %d, val %c\n",bp,*bp);
 	printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
+
+	free(ap);
+	printf("free size_t\n");
+	printf("char malloced ap addr %d, val %c\n",bp,*bp);
+	printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
 	return 0;
 }
 

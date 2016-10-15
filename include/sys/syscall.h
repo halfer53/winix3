@@ -22,6 +22,7 @@
 #define SYSCALL_LOAD_SREC    9
 #define SYSCALL_SBRK    10
 #define SYSCALL_MALLOC    11
+#define SYSCALL_FREE    12
 //TODO: create a sensible allocation scheme for system call numbers
 
 /**

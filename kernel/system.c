@@ -113,6 +113,9 @@ void system_main() {
 				m.p1 = sptr;
 				winix_send(who, &m);
 				break;
+			case SYSCALL_FREE:
+				_free(m.p1);
+				break;
 
 			//System call number is unknown, or not yet implemented.
 			default:
