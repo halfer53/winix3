@@ -8,8 +8,6 @@
 #include <sys/syscall.h>
 #include <stdio.h>
 #include <stddef.h>
-#include <memory.h>
-#define my_sizeof(type) (char *)(&type+1)-(char*)(&type)
 
 #define BUF_LEN		100
 
@@ -20,7 +18,6 @@ int shutdown(int argc, char **argv);
 int exit(int argc, char **argv);
 int fork(int argc, char **argv);
 int exec(int argc, char **argv);
-int test(int argc, char **argv);
 int generic(int argc, char **argv);
 
 //Input buffer & tokeniser
@@ -41,7 +38,6 @@ struct cmd commands[] = {
 	{ "ps", ps },
 	{ "fork", fork },
 	{ "exec", exec },
-	{	"test", test},
 	{ NULL, generic }
 };
 //TODO: ps/uptime/shutdown should be moved to separate programs.
@@ -55,19 +51,6 @@ int isPrintable(int c) {
 
 
 int exec(int argc, char **argv){
-
-	return 0;
-}
-
-int test(int argc, char **argv){
-	unsigned long ul = 0;
-	unsigned long *pul = NULL;
-	char c = 'a';
-	char *str = NULL;
-	int x = 0;
-	int *px = NULL;
-
-	
 
 	return 0;
 }
@@ -133,7 +116,7 @@ int generic(int argc, char **argv) {
 	return -1;
 }
 
-void shell_main() {
+int main() {
 	int i, j;
 	int argc;
 	char *c;
@@ -197,4 +180,5 @@ void shell_main() {
 		//Run it
 		handler->handle(argc, tokens);
 	}
+	return 0;
 }

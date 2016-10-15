@@ -67,6 +67,7 @@ void system_main() {
 		int who;
 		proc_t *p;
 		int response = 0;
+		void *ptr = NULL;
 
 		//Get a message
 		winix_receive(&m);
@@ -78,13 +79,13 @@ void system_main() {
 
 			//Gets the system uptime.
 			case SYSCALL_UPTIME:
-				m.i1 = system_uptime;
+				m.m_u.m_m1.m1i1 = system_uptime;
 				winix_send(who, &m);
 				break;
 
 			//Exits the current process.
 			case SYSCALL_EXIT:
-				printf("\r\n[SYSTEM] Process \"%s (%d)\" exited with code %d\r\n", p->name, p->proc_index, m.i1);
+				printf("\r\n[SYSTEM] Process \"%s (%d)\" exited with code %d\r\n", p->name, p->proc_index, m.m_u.m_m1.m1i1);
 				//TODO: keep process in zombie state until parent calls wait, so the exit value can be retrieved
 				end_process(p);
 				break;
@@ -99,6 +100,11 @@ void system_main() {
 				//winix_send(who, &m);
 				break;
 			case SYSCALL_EXEC:
+				break;
+
+			case SYSCALL_SBRK:
+				//ptr = _sbrk(m.m_u.m_m2.m2ul1);
+				//winix_send(who,&m);
 				break;
 
 			//System call number is unknown, or not yet implemented.

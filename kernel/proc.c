@@ -20,14 +20,6 @@ static proc_t *ready_q[NUM_QUEUES][2];
 //Entries in the process table that are not in use
 static proc_t *free_proc[2];
 
-hole_t hole_table[NUM_HOLES];
-
-//Entries to the list of unallocated memory space in RAM
-static hole_t *sys_holes[2];
-
-//ENtries in the holes that are not in use, but can be added to the holes list
-static hole_t *pending_holes[2];
-
 //The currently-running process
 proc_t *current_proc;
 
@@ -106,52 +98,6 @@ static proc_t *dequeue(proc_t **q) {
 	return p;
 }
 
-
-
-
-//hole enqueue tail
-static void hole_enqueue_tail(hole_t **q, hole_t *proc) {
-	if(q[HEAD] == NULL) {
-		q[HEAD] = q[TAIL] = proc;
-	}
-	else {
-		q[TAIL]->next = proc;
-		q[TAIL] = proc;
-	}
-	proc->next = NULL;
-}
-
-//hole enqueue head
-static void hole_enqueue_head(hole_t **q, hole_t *proc) {
-	if(q[HEAD] == NULL) {
-		proc->next = NULL;
-		q[HEAD] = q[TAIL] = proc;
-	}
-	else {
-		proc->next = q[HEAD];
-		q[HEAD] = proc;
-	}
-}
-
-//hold deque
-static hole_t *hole_dequeue(hole_t **q) {
-	hole_t *p = q[HEAD];
-
-	if(p == NULL) { //Empty list
-		assert(q[TAIL] == NULL, "deq: tail not null");
-		return NULL;
-	}
-
-	if(q[HEAD] == q[TAIL]) { //Last item
-		q[HEAD] = q[TAIL] = NULL;
-	}
-	else { //At least one remaining item
-		q[HEAD] = p->next;
-	}
-	p->next = NULL;
-	return p;
-}
-
 /**
  * Gets a proc struct that isn't currently in use.
  *
@@ -182,7 +128,7 @@ static proc_t *get_free_proc() {
 		// p->sp = proc_stacks[p->proc_index];
 
 
-		p->sp = (size_t *)new_stack(DEFAULT_STACK_SIZE);
+		p->sp = (size_t *)sbrk(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
 		assert(p->sp != NULL,"sp is null");
 
 		p->ra = DEFAULT_RETURN_ADDR;
@@ -227,100 +173,6 @@ static proc_t *pick_proc() {
 
 	return NULL;
 }
-
-
-void Scan_FREE_MEM_BEGIN(){
-	FREE_MEM_BEGIN = (size_t)&BSS_END;
-
-	//Round up to the next 1k boundary
-	FREE_MEM_BEGIN |= 0x03ff;
-	FREE_MEM_BEGIN++;
-
-	//Search for upper limit
-	//Note: this doubles as a memory test.
-	// for(FREE_MEM_END = FREE_MEM_BEGIN; ; FREE_MEM_END++) {
-	// 	*(size_t*)FREE_MEM_END = FREE_MEM_END; //Write address to memory location
-	// 	if(*(size_t*)FREE_MEM_END != FREE_MEM_END) { //Check that the value was remembered
-	// 		break;
-	// 	}
-	//
-	// 	if(!(FREE_MEM_END & 0x1fff)) { //print '.' every 8k
-	// 		putc('.');
-	// 	}
-	// }
-	//
-	// //Wind back to the highest 1k block
-	// FREE_MEM_END &= (size_t)~0x3ff;
-	// FREE_MEM_END--;
-	printf("\r\nfree memory begin 0x%x\r\n",FREE_MEM_BEGIN );
-}
-
-
-
-//create a chunk of memory for the use of new stack
-//return the end of the newly allocated space as stack pointer
-void *new_stack(size_t size){
-	// size_t temp = FREE_MEM_BEGIN;
-	// if (FREE_MEM_END != 0) {
-	// 	//if FREE_MEM_END is not null, then that means the OS is running
-	// 	//otherwise it's initialising, thus FREE_MEM_END is not set yet
-	// 	//we just assume there is enough memory during the start up
-	// 	//since calculating FREE_MEM_END during the start up is gonna crash the system for some unknown reason
-	// 	if (size + FREE_MEM_BEGIN > FREE_MEM_END) {
-	// 		return NULL;
-	// 	}
-	// }
-	//
-	// FREE_MEM_BEGIN += size;
-	// return (void *)temp;
-
-	hole_t *h = NULL;
-	size_t start = 0;
-	size_t hole_length = 0;
-	size_t mem_end = 0;
-	int counter = 0;
-	do{
-		h = hole_dequeue(sys_holes);
-		assert(h!=NULL,"hole is null at 1");
-		hole_length = h->length;
-		start = h->start;
-		//if hole length is smaller than the required size
-		if (hole_length < size) {
-			hole_enqueue_tail(sys_holes,h);
-		}
-		if (counter > 3) {
-			break;
-		}
-		counter++;
-	}while(hole_length < size);
-
-	if (FREE_MEM_END != 0) {
-		//if FREE_MEM_END is not null, then that means the OS is running
-		//otherwise it's initialising, thus FREE_MEM_END is not set yet
-		//we just assume there is enough memory during the start up
-		//since calculating FREE_MEM_END during the start up is gonna crash the system for some unknown reason
-		if (size + h->start > FREE_MEM_END) {
-			return NULL;
-		}
-	}
-	if (FREE_MEM_BEGIN == start) {
-
-		FREE_MEM_BEGIN += size;
-	}
-	//reset and add it back to the pending holes list
-	mem_end = FREE_MEM_END == 0 ? MAX_MEM_END : FREE_MEM_END;
-
-	h->length = mem_end - FREE_MEM_BEGIN;
-
-	h->start = FREE_MEM_BEGIN;
-
-	hole_enqueue_head(sys_holes,h);
-	return (void *)(start+size);
-}
-
-// void *p_malloc(size_t size){
-//
-// }
 
 int fork_proc(proc_t *p1){
 	proc_t *original = p1;
@@ -504,6 +356,7 @@ char* getStateName(proc_state_t state){
  *   Context of the new proc is loaded.
  **/
 void sched() {
+	printf("scheduling\n" );
 	if(current_proc != NULL && !current_proc->flags) {
 		//Accounting
 		current_proc->time_used++;
@@ -889,7 +742,6 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
  **/
 void init_proc() {
 	int i;
-	hole_t *h = NULL;
 	//Initialise queues
 	for(i = 0; i < NUM_QUEUES; i++) {
 		ready_q[i][HEAD] = NULL;
@@ -905,21 +757,6 @@ void init_proc() {
 
 		enqueue_tail(free_proc, p);
 		proc_table[i].proc_index = i;
-	}
-
-
-	h = &hole_table[0];
-	h->start = FREE_MEM_BEGIN;
-	//2^20 SIZE OF MEMORY
-	h->length = MAX_MEM_END - FREE_MEM_BEGIN;
-	h->next = NULL;
-	hole_enqueue_head(sys_holes,h);
-	for ( i = 1; i < NUM_HOLES; i++) {
-		h = &hole_table[i];
-		h->start = 0;
-		h->length = 0;
-		h->next = NULL;
-		hole_enqueue_head(pending_holes,h);
 	}
 
 	//No current process yet.

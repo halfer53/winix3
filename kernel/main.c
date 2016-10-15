@@ -186,7 +186,7 @@ void main() {
 	p->quantum = 1;
 	//###########################################
 
-
+	printf("suc\n" );
 	//Initialise exceptions
 	init_exceptions();
 

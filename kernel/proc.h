@@ -11,13 +11,12 @@
 //Process & Scheduling
 #define PROC_NAME_LEN			20
 #define NUM_PROCS				20
-#define NUM_HOLES				10
 #define NUM_QUEUES				5
 #define IDLE_PRIORITY			4
 #define USER_PRIORITY			3
 #define SYSTEM_PRIORITY			0
 
-#define MAX_MEM_END			131071 //0x1ffff
+
 //Process Defaults
 #define DEFAULT_FLAGS			0
 #define PROTECTION_TABLE_LEN	32
@@ -86,13 +85,6 @@ typedef struct proc {
 //The process table.
 extern proc_t proc_table[NUM_PROCS];
 
-//list of holes in the memory space
-typedef struct _holes{
-	unsigned long start;
-	unsigned long length;
-	struct _holes *next;
-} hole_t;
-
 /**
  * Initialises the process table and scheduling queues.
  **/
@@ -126,15 +118,6 @@ void end_process(proc_t *p);
  **/
 proc_t *get_proc(int proc_nr);
 
-//Scan memory,
-//side effect: FREE_MEM_BEGIN is initialised
-//and holes is initialised
-void Scan_FREE_MEM_BEGIN();
-
-//allocate heap memory given the size of memory,
-//side effect : a new memory of the given size is allocated from FREE_MEM_BEGIN
-//the reference (top of the heap) is returned as the pointer
-void *new_stack(size_t size);
 
 //void *p_malloc(size_t size);
 

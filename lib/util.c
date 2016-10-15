@@ -28,14 +28,3 @@ int hex2int(char *a, int len)
 
     return val;
 }
-int Substring(char* buffer,char* original,int start_index,int length){
-	int i = 0;
-	int count = 0;
-	for(i = start_index; i<length+start_index; i++)
-  {
-        buffer[count] = original[i];
-				count++;
-  }
-	buffer[count] = '\0';
-	return count;
-}

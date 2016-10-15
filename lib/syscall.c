@@ -17,7 +17,7 @@ int sys_uptime() {
 
 	m.type = SYSCALL_UPTIME;
 	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-	return m.i1;
+	return m.m_u.m_m1.m1i1;
 }
 
 /**
@@ -28,9 +28,9 @@ int sys_exit(int status) {
 	message_t m;
 
 	m.type = SYSCALL_EXIT;
-	m.i1 = status;
+	m.m_u.m_m1.m1i1 = status;
 	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-	return m.i1;
+	return m.m_u.m_m1.m1i1;
 }
 
 int sys_process_overview(){
@@ -58,4 +58,15 @@ int sys_exec(char* lines[],int length){
 	m.type = SYSCALL_FORK;
 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 	return 0;
+}
+
+void *sbrk(unsigned long size){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_SBRK;
+	m.m_u.m_m2.m2ul1 = size;
+	response = winix_send(SYSTEM_TASK, &m);
+	return 0;
+	//return m.m_u.m_m2.m2p1;
 }
