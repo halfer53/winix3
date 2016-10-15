@@ -26,13 +26,15 @@ static hole_t *holes[2];
 //The currently-running process
 proc_t *current_proc;
 
-//Process Stacks
-//TODO: dynamically allocate stacks during exec system call.
+//OLD Process Stacks
 //static unsigned long proc_stacks[NUM_PROCS][DEFAULT_STACK_SIZE];
 
 //Limits for memory allocation
 unsigned long FREE_MEM_BEGIN = 0;
 unsigned long FREE_MEM_END = 0;
+
+//temprary holder for newly exec process's pc
+unsigned long exec_pc = 0;
 
 /**
  * Adds a proc to the tail of a list.
@@ -515,6 +517,200 @@ int wini_receive(message_t *m) {
 	}
 	return 0;
 }
+
+
+int winix_exec(char* lines[],int line_length){
+	unsigned long *base = (unsigned long*)FREE_MEM_BEGIN;
+
+	return 0;
+}
+
+
+
+
+int winix_load_srec(char* lines[],int line_length){
+	int wordsLoaded = 0;
+	int index = 0;
+	int checksum = 0;
+  byte byteCheckSum = 0;
+	int recordType = 0;
+	int addressLength = 0;
+	int byteCount = 0;
+	char buffer[128];
+	char tempBufferCount = 0;
+	int address = 0;
+	byte data[255];
+	int readChecksum = 0;
+	int datalength = 0;
+	unsigned long memVal = 0;
+  int i = 0;
+  int j = 0;
+  int linecount = 0;
+
+	while(1){
+		//Read line from terminal
+		// for(i = 0; i < BUF_LEN - 1; i++) {
+		// 	buf[i] = getc(); 	//read
+    //
+		// 	if(buf[i] == '\r') { //test for end
+		// 		break;
+		// 	}
+		// 	putc(buf[i]); 		//echo
+		// }
+
+		char* line = lines[linecount];
+    linecount++;
+    index = 0;
+    checksum = 0;
+
+				//printf("%s\r\n",line);
+        //printf("loop %d\n",linecount );
+				//Start code, always 'S'
+				assert(line[index++] == 'S',"Expecting S");
+
+				//Record type, 1 digit, 0-9, defining the data field
+				//0: Vendor-specific data
+				//1: 16-bit data sequence
+				//2: 24 bit data sequence
+				//3: 32-bit data sequence
+				//5: Count of data sequences in the file. Not required.
+				//7: Starting address for the program, 32 bit address
+				//8: Starting address for the program, 24 bit address
+				//9: Starting address for the program, 16 bit address
+				recordType = line[index++] - '0';
+
+				switch (recordType)
+				{
+						case 0:
+						case 1:
+						case 5:
+						case 9:
+								addressLength = 2;
+								break;
+
+						case 2:
+						case 8:
+								addressLength = 3;
+								break;
+
+						case 3:
+						case 7:
+								addressLength = 4;
+								break;
+
+						default:
+								printf("unknown record type");
+								return 0;
+				}
+				tempBufferCount = Substring(buffer,line,index,2);
+				//printf("record value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				byteCount = hex2int(buffer,tempBufferCount);
+        index += 2;
+        checksum += byteCount;
+
+				//byteCount = ((int)line[index++])*10 + ((int)line[index++]);
+				//int byteCount = Convert.ToInt32(line.Substring(index, 2), 16);
+				//printf("byteCount %d\r\n",byteCount);
+
+
+
+				//Address, 4, 6 or 8 hex digits determined by the record type
+				for (i = 0; i < addressLength; i++)
+				{
+						tempBufferCount = Substring(buffer,line,index+i*2,2);
+						//printf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+						checksum += hex2int(buffer,tempBufferCount);
+						//string ch = line.Substring(index + i * 2, 2);
+						//checksum += Convert.ToInt32(ch, 16);
+				}
+				tempBufferCount = Substring(buffer,line,index,addressLength*2);
+				//printf("temp address value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				address = hex2int(buffer,tempBufferCount);
+
+				//address = Convert.ToInt32(line.Substring(index, addressLength * 2), 16);
+        //printf("index %d\n",index );
+        index += addressLength * 2;
+        //printf("index %d\n",index );
+				byteCount -= addressLength ;
+        //printf("byteCount %d\n",byteCount );
+				//Data, a sequence of bytes.
+				//data.length = 255
+				assert(byteCount<255,"byteCount bigger than 255");
+				for (i = 0; i < byteCount-1; i++)
+				{
+						tempBufferCount = Substring(buffer,line,index,2);
+						//printf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+						data[i] = hex2int(buffer,tempBufferCount);
+						//data[i] = (byte)Convert.ToInt32(line.Substring(index, 2), 16);
+						index += 2;
+						checksum += data[i];
+				}
+
+				//Checksum, two hex digits. Inverted LSB of the sum of values, including byte count, address and all data.
+				//readChecksum = (byte)Convert.ToInt32(line.Substring(index, 2), 16);
+
+				tempBufferCount = Substring(buffer,line,index,2);
+				//printf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				readChecksum = hex2int(buffer,tempBufferCount);
+        //printf("checksum %d\r\n",checksum );
+				byteCheckSum = (byte)(checksum & 0xFF);
+        //printf("checksum %d\r\n",byteCheckSum );
+        byteCheckSum = ~byteCheckSum;
+        //printf("checksum %d\r\n",byteCheckSum );
+				if (readChecksum != byteCheckSum){
+					printf("failed checksum\r\n" );
+					return;
+				}
+
+				//Put in memory
+				assert((byteCount-1) % 4 == 0, "Data should only contain full 32-bit words.");
+        //printf("recordType %d\n", recordType);
+        //printf("%lu\n",(unsigned long)data[0] );
+        //printf("byteCount %d\n",byteCount );
+        switch (recordType)
+				{
+						case 3: //data intended to be stored in memory.
+
+								for (i = 0; i < byteCount-1; i += 4)
+								{
+										memVal = 0;
+										for (j = i; j < i + 4; j++)
+										{
+
+												memVal <<= 8;
+												memVal |= data[j];
+										}
+										wordsLoaded++;
+										printf("0x%08x\n",(unsigned int)memVal );
+										*(unsigned long*)FREE_MEM_BEGIN = (unsigned int)memVal;
+										FREE_MEM_BEGIN++;
+								}
+
+								// mAddressBus.IsWrite = true;
+								// for (int i = 0; i < memContents.Count; i++)
+								// {
+								// 		mDataBus.Write(memContents[i]);
+								// 		mAddressBus.Write((uint)(i + address));
+								// 		RAM.Write();
+								// 		ROM.Write();
+								// 		wordsLoaded++;
+								// }
+								break;
+
+						case 7: //entry point for the program.
+								// CPU.PC = (uint)address;
+								exec_pc = (unsigned long) address;
+								break;
+				}
+        if (linecount >= line_length) {
+          break;
+        }
+		}
+
+		return wordsLoaded;
+}
+
+
 
 /**
  * Initialises the process table

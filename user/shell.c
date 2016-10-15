@@ -52,6 +52,7 @@ int isPrintable(int c) {
 
 int exec(int argc, char **argv){
 
+	return 0;
 }
 
 int fork(int argc, char **argv){
@@ -127,15 +128,24 @@ void shell_main() {
 		//Read line from terminal
 		for(i = 0; i < BUF_LEN - 1; i++) {
 			buf[i] = getc(); 	//read
-
+			//printf2("%d\n",(int)buf[i] );
 			if(buf[i] == '\r') { //test for end
 				break;
 			}
-			putc2(buf[i]);
+			if ((int)buf[i] == 8) { //backspace
+
+				if (i != 0) {
+					putc(buf[i]);
+					i--;
+				}
+				i--;
+				continue;
+			}
+
 			putc(buf[i]); 		//echo
 		}
 		buf[++i] = '\0';
-		printf("\r\n");
+		printf("\r\n" );
 
 		//Tokenise command
 		//TODO: proper parsing of arguments

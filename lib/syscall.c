@@ -50,3 +50,12 @@ int sys_fork(){
 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 	return 0;
 }
+
+int sys_exec(char* lines[],int length){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_FORK;
+	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
+	return 0;
+}

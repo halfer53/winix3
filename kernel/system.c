@@ -98,6 +98,8 @@ void system_main() {
 				//m.i1 = response;
 				//winix_send(who, &m);
 				break;
+			case SYSCALL_EXEC:
+				break;
 
 			//System call number is unknown, or not yet implemented.
 			default:

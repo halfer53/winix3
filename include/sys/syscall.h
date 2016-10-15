@@ -18,6 +18,8 @@
 #define SYSCALL_EXIT		5
 #define SYSCALL_PROCESS_OVERVIEW		6
 #define SYSCALL_FORK		7
+#define SYSCALL_EXEC    8
+#define SYSCALL_LOAD_SREC    9
 //TODO: create a sensible allocation scheme for system call numbers
 
 /**
