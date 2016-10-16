@@ -347,7 +347,6 @@ char* getStateName(proc_state_t state){
  *   Context of the new proc is loaded.
  **/
 void sched() {
-	printf("scheduling\n" );
 	if(current_proc != NULL && !current_proc->flags) {
 		//Accounting
 		current_proc->time_used++;

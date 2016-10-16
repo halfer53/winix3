@@ -12,7 +12,7 @@ static hole_t *used_holes[2];
 //Linked lists are defined by a head and tail pointer.
 #define HEAD 0
 #define TAIL 1
-
+#define my_sizeof(var) (char *)(&var+1)-(char*)(&var)
 
 /**
  * Adds a proc to the tail of a list.
@@ -79,6 +79,34 @@ static hole_t *hole_dequeue(hole_t **q) {
 }
 
 
+
+static int delete(hole_t **q, hole_t *h){
+	hole_t *curr = q[HEAD];
+	hole_t *prev = NULL;
+
+	if(curr == NULL) { //Empty list
+		assert(q[TAIL] == NULL, "delete: tail not null");
+		return 0;
+	}
+
+	while(curr != h && curr != NULL){
+		prev = curr;
+		curr = curr->next;
+	}
+	if (curr != NULL) {
+		if (prev == NULL) {
+			q[HEAD] = q[TAIL] = NULL;
+		}else{
+			prev->next = curr->next;
+		}
+		return 1;
+	}else{
+		return 0;
+	}
+
+}
+
+
 void Scan_FREE_MEM_BEGIN(){
 	FREE_MEM_BEGIN = (size_t)&BSS_END;
 
@@ -102,9 +130,11 @@ void *_sbrk(size_t size){
   }
 
   FREE_MEM_BEGIN += size;
-	printf("free mem %x\n",FREE_MEM_BEGIN );
+	//printf("free mem %x\n",FREE_MEM_BEGIN );
   return (void *)temp;
 }
+
+
 
 void *_malloc(size_t size){
   hole_t *temp_holes_table[2];
@@ -144,16 +174,24 @@ void *_malloc(size_t size){
       //if there is enough space
       if (p_start_addr != NULL) {
         h = hole_dequeue(pending_holes);
-        h->start = p_start_addr;
-        h->length = size;
-        printf("new hole start 0x%x, size %d\n\n",h->start,(int)(h->length) );
-        hole_enqueue_tail(used_holes,h);
-        return p_start_addr;
+
+				if (h != NULL) {
+					h->start = p_start_addr;
+	        h->length = size;
+	        printf("new hole start 0x%x, size %d\n\n",h->start,(int)(h->length) );
+	        hole_enqueue_tail(used_holes,h);
+	        return p_start_addr;
+				}else{
+					//TODO
+					//if the hole_table has ran out, hole_dequeue would return NULL
+					//in this case, dynamically allocating a new space hole_t is needed using sbrk() or malloc()
+					//but since we don't have sizeof() implemented yet, (which is hard to implement)
+					//we'll just assume that there is enough space
+					return NULL;
+				}
+
       }else{
 				//if sbrk isn't successful, then there's no memory space overall available in the OS
-				//
-
-        //if there is not enough space for sbrk
         return NULL;
       }
 
@@ -196,7 +234,7 @@ void _free(void *ptr){
 	do{
 		h = hole_dequeue(used_holes);
     if (h != NULL) {
-      printf("hole start 0x%x, size %d\n",h->start,(int)(h->length) );
+      printf("free: hole start 0x%x, size %d\n",h->start,(int)(h->length) );
       //if the holes size is smaller than the required size
       if (h->start != ptr) {
   			hole_enqueue_head(temp_holes_table,h);
@@ -213,17 +251,57 @@ void _free(void *ptr){
   }
 
 	if (h != NULL) {
-		printf("found start 0x%x, length %d\n\n",h->start,h->length );
+		printf("free: found start 0x%x, length %d\n\n",h->start,h->length );
 		p = (size_t *)ptr;
 		for ( i = 0; i < h->length; i++) {
 			*p = DEFAULT_MEM_VALUE;
 			p++;
 		}
+
+		//merging ajacent holes
+		temp_h = unused_holes[HEAD];
+		while(temp_h != NULL){
+			size_t *temp_h_next = (size_t *)(temp_h->start) + temp_h->length;
+			size_t *h_next = (size_t *)(h->start) + h->length;
+			if (temp_h_next == h->start) {
+				if (delete(unused_holes,temp_h)) {
+					//delete the adjacent hole, merge them together, and add the deleted one to the pending hole
+					h->start = (void *)((size_t *)h->start - temp_h->length);
+					h->length += temp_h->length;
+					temp_h->start = NULL;
+					temp_h->length = 0;
+					hole_enqueue_head(pending_holes,temp_h);
+					break;
+				}else{
+					printf("delete unsuccessful\n" );
+					return;
+				}
+			}else if(h_next == temp_h->start){
+				if (delete(unused_holes,temp_h)) {
+					h->length += temp_h->length;
+					temp_h->start = NULL;
+					temp_h->length = 0;
+					hole_enqueue_head(pending_holes,temp_h);
+					break;
+				}else{
+					printf("delete unsuccessful\n" );
+					return;
+				}
+			}
+		}
 		//clear this hole from the used table
-		hole_enqueue_tail(unused_holes,h);
+		hole_enqueue_head(unused_holes,h);
 	}
+	hole_overview(unused_holes);
 
+}
 
+void hole_overview(hole_t **q){
+	hole_t *curr = q[HEAD];
+	while (curr != NULL) {
+		printf("hole start %x, length %d\n",(size_t *)curr->start,curr->length );
+		curr = curr->next;
+	}
 }
 
 
@@ -237,6 +315,9 @@ void init_memory(){
 
 	for ( i = 0; i < NUM_HOLES; i++) {
 		h = &hole_table[i];
+		if (i == 0) {
+			printf("sizeof hole_t %d\n",my_sizeof(h) );
+		}
 		h->start = 0;
 		h->length = 0;
 		h->next = NULL;

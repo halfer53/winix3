@@ -20,7 +20,7 @@ int shutdown(int argc, char **argv);
 int exit(int argc, char **argv);
 int shell_fork(int argc, char **argv);
 int shell_exec(int argc, char **argv);
-int test(int argc, char **argv);
+int testmalloc(int argc, char **argv);
 int generic(int argc, char **argv);
 #define my_sizeof(var) (char *)(&var+1)-(char*)(&var)
 
@@ -42,7 +42,7 @@ struct cmd commands[] = {
 	{ "ps", ps },
 	{ "fork", shell_fork },
 	{ "exec", shell_exec },
-	{ "test", test},
+	{ "testmal", testmalloc},
 	{ NULL, generic }
 };
 //TODO: ps/uptime/shutdown should be moved to separate programs.
@@ -54,7 +54,7 @@ int isPrintable(int c) {
 	return ('!' <= c && c <= '~');
 }
 
-int test(int argc, char **argv){
+int testmalloc(int argc, char **argv){
 	size_t a = 0;
 	char b = 'a';
 	int c = 0;
@@ -62,9 +62,66 @@ int test(int argc, char **argv){
 	size_t *ap = NULL;
   char *bp = NULL;
 	int *cp = NULL;
+	char **lines = NULL;
+	int n = 2;
+	char **prev_p = NULL;
+	char *prev_p_line[2] = {NULL,NULL};
+	int i = 0;
+
+	if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
+		printf("not enough space\n");
+		return 0;
+	}else{
+		printf("lines point at addr %x\n", lines);
+		prev_p = lines;
+	}
+	for ( i = 0; i < n; i++) {
+		if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
+			printf("not enough space\n");
+			return 0;
+		}
+		prev_p_line[i] = lines[i];
+		printf("lines[%d] point at addr %x\n",i, lines);
+	}
+
+	strcpy(lines[0],"a");
+	strcpy(lines[1],"ab");
+
+	for ( i = 0; i < n; i++) {
+		printf("line %d content %s\n",i,lines[i] );
+	}
+
+	for ( i = 0; i < n; i++) {
+		free(lines[i]);
+	}
+	free(lines);
+	return 0;
+
+	if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
+		printf("not enough space\n");
+		return 0;
+	}else{
+		if (prev_p != lines) {
+			printf(" incorrect free, new addr at %x, old addr at %x\n",lines,prev_p );
+
+		}
+	}
+	for ( i = 0; i < n; i++) {
+		if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
+			printf("not enough space\n");
+			return 0;
+		}
+		if (prev_p_line[i] != lines[i]) {
+			printf(" incorrect free, new addr at %x, old addr at %x\n",lines[i],prev_p_line[i] );
+
+		}
+
+	}
+
+
 
 	// printf("unsigned long %d\n",my_sizeof(a) );
-	// printf("char %d\n",my_sizeof(b) );
+	 printf("char pointer size %d\n",my_sizeof(bp) );
 	// printf("int %d\n",my_sizeof(c) );
 	// printf("long %d\n",my_sizeof(d) );
 

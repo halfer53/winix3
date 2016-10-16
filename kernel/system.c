@@ -104,7 +104,7 @@ void system_main() {
 				break;
 
 			case SYSCALL_SBRK:
-				sptr = _sbrk(m.s1);
+				sptr = (size_t *)_sbrk(m.s1);
 				m.p1 = sptr;
 				winix_send(who, &m);
 				break;
