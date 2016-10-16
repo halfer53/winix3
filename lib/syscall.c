@@ -17,7 +17,7 @@ int sys_uptime() {
 
 	m.type = SYSCALL_UPTIME;
 	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-	return m.m_u.m_m1.m1i1;
+	return m.i1;
 }
 
 /**
@@ -28,9 +28,9 @@ int sys_exit(int status) {
 	message_t m;
 
 	m.type = SYSCALL_EXIT;
-	m.m_u.m_m1.m1i1 = status;
+	m.i1 = status;
 	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-	return m.m_u.m_m1.m1i1;
+	return m.i1;
 }
 
 int sys_process_overview(){
@@ -42,7 +42,7 @@ int sys_process_overview(){
 	return 0;
 }
 
-int sys_fork(){
+int fork(){
 	int response = 0;
 	message_t m;
 
@@ -51,7 +51,7 @@ int sys_fork(){
 	return 0;
 }
 
-int sys_exec(char* lines[],int length){
+int exec(char* lines[],int length){
 	int response = 0;
 	message_t m;
 
@@ -64,9 +64,27 @@ void *sbrk(unsigned long size){
 	int response = 0;
 	message_t m;
 
-	m.type = SYSCALL_SBRK;
-	m.m_u.m_m2.m2ul1 = size;
-	response = winix_send(SYSTEM_TASK, &m);
-	return 0;
-	//return m.m_u.m_m2.m2p1;
+	m.type = SYSCALL_FORK;
+	m.s1 = size;
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	return m.p1;
+}
+
+void *malloc(unsigned long size){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_MALLOC;
+	m.s1 = size;
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	return m.p1;
+}
+
+void free(void *ptr){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_FREE;
+	m.p1 = ptr;
+	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 }

@@ -1,1 +1,3 @@
-void *_malloc(unsigned long size);
+
+
+void *malloc(unsigned long size);

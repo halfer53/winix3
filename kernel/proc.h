@@ -118,7 +118,6 @@ void end_process(proc_t *p);
  **/
 proc_t *get_proc(int proc_nr);
 
-
 //void *p_malloc(size_t size);
 
 //fork the next process in the ready_q, return the new proc_index of the forked process

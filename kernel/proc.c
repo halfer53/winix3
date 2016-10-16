@@ -119,16 +119,8 @@ static proc_t *get_free_proc() {
 			p->regs[i] = DEFAULT_REG_VALUE;
 		}
 
-		//Clear stack
-		// for(i = 0; i < DEFAULT_STACK_SIZE; i++) {
-		// 	proc_stacks[p->proc_index][i] = DEFAULT_MEM_VALUE;
-		// }
-		//
-		// //Initialise state
-		// p->sp = proc_stacks[p->proc_index];
+		p->sp = (size_t *)_sbrk(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
 
-
-		p->sp = (size_t *)sbrk(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
 		assert(p->sp != NULL,"sp is null");
 
 		p->ra = DEFAULT_RETURN_ADDR;
@@ -173,7 +165,6 @@ static proc_t *pick_proc() {
 
 	return NULL;
 }
-
 int fork_proc(proc_t *p1){
 	proc_t *original = p1;
 	proc_t *p = NULL;

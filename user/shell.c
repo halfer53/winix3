@@ -8,8 +8,8 @@
 #include <sys/syscall.h>
 #include <stdio.h>
 #include <stddef.h>
-#include <memory.h>
-#define my_sizeof(type) (char *)(&type+1)-(char*)(&type)
+#include <type.h>
+#include <size.h>
 
 #define BUF_LEN		100
 
@@ -18,10 +18,11 @@ int ps(int argc, char **argv);
 int uptime(int argc, char **argv);
 int shutdown(int argc, char **argv);
 int exit(int argc, char **argv);
-int fork(int argc, char **argv);
-int exec(int argc, char **argv);
+int shell_fork(int argc, char **argv);
+int shell_exec(int argc, char **argv);
 int test(int argc, char **argv);
 int generic(int argc, char **argv);
+#define my_sizeof(var) (char *)(&var+1)-(char*)(&var)
 
 //Input buffer & tokeniser
 static char buf[BUF_LEN];
@@ -39,9 +40,9 @@ struct cmd commands[] = {
 	{ "shutdown", shutdown },
 	{ "exit", exit },
 	{ "ps", ps },
-	{ "fork", fork },
-	{ "exec", exec },
-	{	"test", test},
+	{ "fork", shell_fork },
+	{ "exec", shell_exec },
+	{ "test", test},
 	{ NULL, generic }
 };
 //TODO: ps/uptime/shutdown should be moved to separate programs.
@@ -53,28 +54,43 @@ int isPrintable(int c) {
 	return ('!' <= c && c <= '~');
 }
 
-
-int exec(int argc, char **argv){
-
-	return 0;
-}
-
 int test(int argc, char **argv){
-	unsigned long ul = 0;
-	unsigned long *pul = NULL;
-	char c = 'a';
-	char *str = NULL;
-	int x = 0;
-	int *px = NULL;
+	size_t a = 0;
+	char b = 'a';
+	int c = 0;
+	long d = 0;
+	size_t *ap = NULL;
+  char *bp = NULL;
+	int *cp = NULL;
 
-	
+	// printf("unsigned long %d\n",my_sizeof(a) );
+	// printf("char %d\n",my_sizeof(b) );
+	// printf("int %d\n",my_sizeof(c) );
+	// printf("long %d\n",my_sizeof(d) );
 
+ 	ap =	(size_t *)malloc(SIZE_T_SIZE);
+	*ap = 1;
+	printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
+
+	bp = (char *)malloc(CHAR_SIZE);
+	*bp = 'b';
+	printf("char malloced ap addr %d, val %c\n",bp,*bp);
+	printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
+
+	free(ap);
+	printf("free size_t\n");
+	printf("char malloced ap addr %d, val %c\n",bp,*bp);
+	printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
 	return 0;
 }
 
-int fork(int argc, char **argv){
+int shell_exec(int argc, char **argv){
+
+	return 0;
+}
+int shell_fork(int argc, char **argv){
 	int forkid = 0;
-	forkid = sys_fork();
+	forkid = fork();
 	return 0;
 }
 

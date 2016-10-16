@@ -15,10 +15,9 @@ typedef struct {int m2i1, m2i2, m2i3; long m2l1;unsigned long m2ul1; void *m2p1;
 typedef struct {
 	int src;
 	int type;
-	union{
-		mess_1 m_m1;
-    mess_2 m_m2;
-	}m_u;
+	int i1, i2, i3;
+	void *p1, *p2, *p3;
+	unsigned long s1;
 } message_t;
 
 

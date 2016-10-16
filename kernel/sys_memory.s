@@ -7,13 +7,13 @@ hole_enqueue_tail:
 	lw	$13, 0($13)
 	addu	$13, $0, $13
 	sneu	$13, $13, $0
-	bnez	$13, L.11
+	bnez	$13, L.10
 	lw	$13, 2($sp)
 	lw	$12, 3($sp)
 	sw	$12, 1($13)
 	sw	$12, 0($13)
-	j	L.12
-L.11:
+	j	L.11
+L.10:
 	lw	$13, 2($sp)
 	lw	$13, 1($13)
 	lw	$12, 3($sp)
@@ -21,10 +21,10 @@ L.11:
 	lw	$13, 2($sp)
 	lw	$12, 3($sp)
 	sw	$12, 1($13)
-L.12:
+L.11:
 	lw	$13, 3($sp)
 	sw	$0, 2($13)
-L.10:
+L.9:
 	lw	$12, 0($sp)
 	lw	$13, 1($sp)
 	addui	$sp, $sp, 2
@@ -37,15 +37,15 @@ hole_enqueue_head:
 	lw	$13, 0($13)
 	addu	$13, $0, $13
 	sneu	$13, $13, $0
-	bnez	$13, L.14
+	bnez	$13, L.13
 	lw	$13, 3($sp)
 	sw	$0, 2($13)
 	lw	$13, 2($sp)
 	lw	$12, 3($sp)
 	sw	$12, 1($13)
 	sw	$12, 0($13)
-	j	L.15
-L.14:
+	j	L.14
+L.13:
 	lw	$13, 3($sp)
 	lw	$12, 2($sp)
 	lw	$12, 0($12)
@@ -53,8 +53,8 @@ L.14:
 	lw	$13, 2($sp)
 	lw	$12, 3($sp)
 	sw	$12, 0($13)
-L.15:
-L.13:
+L.14:
+L.12:
 	lw	$12, 0($sp)
 	lw	$13, 1($sp)
 	addui	$sp, $sp, 2
@@ -70,44 +70,44 @@ hole_dequeue:
 	lw	$7, 0($13)
 	addu	$13, $0, $7
 	sneu	$13, $13, $0
-	bnez	$13, L.17
+	bnez	$13, L.16
 	lw	$13, 7($sp)
 	lw	$13, 1($13)
 	addu	$13, $0, $13
 	sneu	$13, $13, $0
-	bnez	$13, L.21
+	bnez	$13, L.20
 	addui	$6, $0, 1
-	j	L.22
-L.21:
+	j	L.21
+L.20:
 	addu	$6, $0, $0
-L.22:
+L.21:
 	sw	$6, 0($sp)
-	la	$13, L.20
+	la	$13, L.19
 	sw	$13, 1($sp)
 	jal	assert
 	addu	$1, $0, $0
-	j	L.16
-L.17:
+	j	L.15
+L.16:
 	lw	$13, 7($sp)
 	lw	$12, 0($13)
 	addu	$12, $0, $12
 	lw	$13, 1($13)
 	addu	$13, $0, $13
 	sneu	$13, $12, $13
-	bnez	$13, L.23
+	bnez	$13, L.22
 	lw	$13, 7($sp)
 	addu	$12, $0, $0
 	sw	$12, 1($13)
 	sw	$12, 0($13)
-	j	L.24
-L.23:
+	j	L.23
+L.22:
 	lw	$13, 7($sp)
 	lw	$12, 2($7)
 	sw	$12, 0($13)
-L.24:
+L.23:
 	sw	$0, 2($7)
 	addu	$1, $0, $7
-L.16:
+L.15:
 	lw	$6, 2($sp)
 	lw	$7, 3($sp)
 	lw	$12, 4($sp)
@@ -132,12 +132,12 @@ Scan_FREE_MEM_BEGIN:
 	addui	$12, $0, 1
 	addu	$13, $13, $12
 	sw	$13, FREE_MEM_BEGIN($0)
-	la	$13, L.26
+	la	$13, L.25
 	sw	$13, 0($sp)
 	lw	$13, FREE_MEM_BEGIN($0)
 	sw	$13, 1($sp)
 	jal	printf
-L.25:
+L.24:
 	lw	$12, 2($sp)
 	lw	$13, 3($sp)
 	lw	$ra, 4($sp)
@@ -145,34 +145,338 @@ L.25:
 	jr	$ra
 .global	_sbrk
 _sbrk:
-	subui	$sp, $sp, 3
-	sw	$12, 0($sp)
-	sw	$13, 1($sp)
+	subui	$sp, $sp, 6
+	sw	$12, 2($sp)
+	sw	$13, 3($sp)
+	sw	$ra, 4($sp)
 	lw	$13, FREE_MEM_BEGIN($0)
-	sw	$13, 2($sp)
+	sw	$13, 5($sp)
 	lw	$13, FREE_MEM_END($0)
 	sequ	$13, $13, $0
-	bnez	$13, L.28
-	lw	$13, 3($sp)
+	bnez	$13, L.27
+	lw	$13, 6($sp)
 	lw	$12, FREE_MEM_BEGIN($0)
 	addu	$13, $13, $12
 	lw	$12, FREE_MEM_END($0)
 	sleu	$13, $13, $12
-	bnez	$13, L.30
+	bnez	$13, L.29
 	addu	$1, $0, $0
-	j	L.27
-L.30:
-L.28:
+	j	L.26
+L.29:
+L.27:
 	lw	$13, FREE_MEM_BEGIN($0)
-	lw	$12, 3($sp)
+	lw	$12, 6($sp)
 	addu	$13, $13, $12
 	sw	$13, FREE_MEM_BEGIN($0)
-	lw	$13, 2($sp)
+	la	$13, L.31
+	sw	$13, 0($sp)
+	lw	$13, FREE_MEM_BEGIN($0)
+	sw	$13, 1($sp)
+	jal	printf
+	lw	$13, 5($sp)
 	addu	$1, $0, $13
-L.27:
-	lw	$12, 0($sp)
-	lw	$13, 1($sp)
-	addui	$sp, $sp, 3
+L.26:
+	lw	$12, 2($sp)
+	lw	$13, 3($sp)
+	lw	$ra, 4($sp)
+	addui	$sp, $sp, 6
+	jr	$ra
+.global	_malloc
+_malloc:
+	subui	$sp, $sp, 14
+	sw	$6, 4($sp)
+	sw	$7, 5($sp)
+	sw	$12, 6($sp)
+	sw	$13, 7($sp)
+	sw	$ra, 8($sp)
+	addu	$6, $0, $0
+	addu	$7, $0, $0
+	sw	$0, 11($sp)
+	sw	$0, 10($sp)
+	sw	$0, 9($sp)
+	addu	$13, $0, $0
+	sw	$13, 13($sp)
+	sw	$13, 12($sp)
+L.34:
+	la	$13, unused_holes
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$7, $0, $13
+	addu	$13, $0, $7
+	sequ	$13, $13, $0
+	bnez	$13, L.37
+	la	$13, L.39
+	sw	$13, 0($sp)
+	lw	$13, 0($7)
+	sw	$13, 1($sp)
+	lw	$13, 1($7)
+	addu	$13, $0, $13
+	sw	$13, 2($sp)
+	jal	printf
+	lw	$13, 1($7)
+	lw	$12, 14($sp)
+	sgeu	$13, $13, $12
+	bnez	$13, L.36
+	addui	$13, $sp, 12
+	sw	$13, 0($sp)
+	sw	$7, 1($sp)
+	jal	hole_enqueue_head
+L.41:
+L.37:
+L.35:
+	addu	$13, $0, $7
+	sneu	$13, $13, $0
+	bnez	$13, L.34
+L.36:
+	addui	$13, $sp, 12
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$6, $0, $13
+	j	L.43
+L.42:
+	la	$13, unused_holes
+	sw	$13, 0($sp)
+	sw	$6, 1($sp)
+	jal	hole_enqueue_head
+	addui	$13, $sp, 12
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$6, $0, $13
+L.43:
+	addu	$13, $0, $6
+	sneu	$13, $13, $0
+	bnez	$13, L.42
+	addu	$13, $0, $7
+	sneu	$13, $13, $0
+	bnez	$13, L.45
+	la	$13, L.47
+	sw	$13, 0($sp)
+	jal	printf
+	lw	$13, 14($sp)
+	sw	$13, 0($sp)
+	jal	_sbrk
+	addu	$13, $0, $1
+	sw	$13, 11($sp)
+	la	$13, L.48
+	sw	$13, 0($sp)
+	addui	$13, $sp, 11
+	sw	$13, 1($sp)
+	lw	$13, 11($sp)
+	sw	$13, 2($sp)
+	lw	$13, 0($13)
+	sw	$13, 3($sp)
+	jal	printf
+	lw	$13, 11($sp)
+	addu	$13, $0, $13
+	sequ	$13, $13, $0
+	bnez	$13, L.49
+	la	$13, pending_holes
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$7, $0, $13
+	lw	$13, 11($sp)
+	sw	$13, 0($7)
+	lw	$13, 14($sp)
+	sw	$13, 1($7)
+	la	$13, L.51
+	sw	$13, 0($sp)
+	lw	$13, 0($7)
+	sw	$13, 1($sp)
+	lw	$13, 1($7)
+	addu	$13, $0, $13
+	sw	$13, 2($sp)
+	jal	printf
+	la	$13, used_holes
+	sw	$13, 0($sp)
+	sw	$7, 1($sp)
+	jal	hole_enqueue_tail
+	lw	$1, 11($sp)
+	j	L.32
+L.49:
+	addu	$1, $0, $0
+	j	L.32
+L.45:
+	lw	$13, 1($7)
+	lw	$12, 14($sp)
+	sltu	$13, $13, $12
+	bnez	$13, L.52
+	lw	$13, 0($7)
+	sw	$13, 11($sp)
+	la	$13, L.54
+	sw	$13, 0($sp)
+	lw	$13, 0($7)
+	sw	$13, 1($sp)
+	lw	$13, 1($7)
+	addu	$13, $0, $13
+	sw	$13, 2($sp)
+	jal	printf
+	lw	$13, 1($7)
+	lw	$12, 14($sp)
+	sleu	$13, $13, $12
+	bnez	$13, L.55
+	la	$13, pending_holes
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$6, $0, $13
+	lw	$13, 14($sp)
+	lw	$12, 0($7)
+	addu	$13, $13, $12
+	sw	$13, 0($6)
+	lw	$13, 1($7)
+	lw	$12, 14($sp)
+	subu	$13, $13, $12
+	sw	$13, 1($6)
+	la	$13, unused_holes
+	sw	$13, 0($sp)
+	sw	$6, 1($sp)
+	jal	hole_enqueue_tail
+	la	$13, L.57
+	sw	$13, 0($sp)
+	lw	$13, 0($6)
+	sw	$13, 1($sp)
+	lw	$13, 1($6)
+	addu	$13, $0, $13
+	sw	$13, 2($sp)
+	jal	printf
+L.55:
+	lw	$13, 14($sp)
+	sw	$13, 1($7)
+	la	$13, used_holes
+	sw	$13, 0($sp)
+	sw	$7, 1($sp)
+	jal	hole_enqueue_tail
+	lw	$1, 11($sp)
+	j	L.32
+L.52:
+	la	$13, L.58
+	sw	$13, 0($sp)
+	jal	printf
+	addu	$1, $0, $0
+L.32:
+	lw	$6, 4($sp)
+	lw	$7, 5($sp)
+	lw	$12, 6($sp)
+	lw	$13, 7($sp)
+	lw	$ra, 8($sp)
+	addui	$sp, $sp, 14
+	jr	$ra
+.global	_free
+_free:
+	subui	$sp, $sp, 14
+	sw	$4, 3($sp)
+	sw	$5, 4($sp)
+	sw	$6, 5($sp)
+	sw	$7, 6($sp)
+	sw	$12, 7($sp)
+	sw	$13, 8($sp)
+	sw	$ra, 9($sp)
+	addu	$6, $0, $0
+	addu	$7, $0, $0
+	addu	$5, $0, $0
+	addu	$4, $0, $0
+	sw	$0, 11($sp)
+	sw	$0, 10($sp)
+	addu	$13, $0, $0
+	sw	$13, 13($sp)
+	sw	$13, 12($sp)
+L.61:
+	la	$13, used_holes
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$7, $0, $13
+	addu	$13, $0, $7
+	sequ	$13, $13, $0
+	bnez	$13, L.64
+	la	$13, L.39
+	sw	$13, 0($sp)
+	lw	$13, 0($7)
+	sw	$13, 1($sp)
+	lw	$13, 1($7)
+	addu	$13, $0, $13
+	sw	$13, 2($sp)
+	jal	printf
+	lw	$13, 0($7)
+	addu	$13, $0, $13
+	lw	$12, 14($sp)
+	addu	$12, $0, $12
+	sequ	$13, $13, $12
+	bnez	$13, L.63
+	addui	$13, $sp, 12
+	sw	$13, 0($sp)
+	sw	$7, 1($sp)
+	jal	hole_enqueue_head
+L.67:
+L.64:
+L.62:
+	addu	$13, $0, $7
+	sneu	$13, $13, $0
+	bnez	$13, L.61
+L.63:
+	addui	$13, $sp, 12
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$6, $0, $13
+	j	L.69
+L.68:
+	la	$13, used_holes
+	sw	$13, 0($sp)
+	sw	$6, 1($sp)
+	jal	hole_enqueue_head
+	addui	$13, $sp, 12
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$6, $0, $13
+L.69:
+	addu	$13, $0, $6
+	sneu	$13, $13, $0
+	bnez	$13, L.68
+	addu	$13, $0, $7
+	sequ	$13, $13, $0
+	bnez	$13, L.71
+	la	$13, L.73
+	sw	$13, 0($sp)
+	lw	$13, 0($7)
+	sw	$13, 1($sp)
+	lw	$13, 1($7)
+	sw	$13, 2($sp)
+	jal	printf
+	lw	$5, 14($sp)
+	addu	$4, $0, $0
+	j	L.77
+L.74:
+	lhi	$13, 0xffff
+	ori	$13, $13, 0xffff
+	sw	$13, 0($5)
+	addui	$5, $5, 1
+L.75:
+	addi	$4, $4, 1
+L.77:
+	addu	$13, $0, $4
+	lw	$12, 1($7)
+	sltu	$13, $13, $12
+	bnez	$13, L.74
+	la	$13, unused_holes
+	sw	$13, 0($sp)
+	sw	$7, 1($sp)
+	jal	hole_enqueue_tail
+L.71:
+L.59:
+	lw	$4, 3($sp)
+	lw	$5, 4($sp)
+	lw	$6, 5($sp)
+	lw	$7, 6($sp)
+	lw	$12, 7($sp)
+	lw	$13, 8($sp)
+	lw	$ra, 9($sp)
+	addui	$sp, $sp, 14
 	jr	$ra
 .global	init_memory
 init_memory:
@@ -194,7 +498,7 @@ init_memory:
 	sw	$13, pending_holes+1($0)
 	sw	$13, pending_holes($0)
 	addu	$6, $0, $0
-L.36:
+L.82:
 	addui	$13, $0, 3
 	mult	$13, $13, $6
 	la	$12, hole_table
@@ -206,11 +510,11 @@ L.36:
 	sw	$13, 0($sp)
 	sw	$7, 1($sp)
 	jal	hole_enqueue_head
-L.37:
+L.83:
 	addi	$6, $6, 1
 	slti	$13, $6, 100
-	bnez	$13, L.36
-L.32:
+	bnez	$13, L.82
+L.78:
 	lw	$6, 2($sp)
 	lw	$7, 3($sp)
 	lw	$12, 4($sp)
@@ -240,7 +544,25 @@ hole_table:
 .extern	current_proc 1
 .extern	proc_table 1640
 .data
-L.26:
+L.73:
+	.asciiz	"found start 0x%x, length %d\n\n"
+L.58:
+	.asciiz	"this shouldn't happen h==null but h->length < size"
+L.57:
+	.asciiz	"remaining hole start 0x%x, size %d\n"
+L.54:
+	.asciiz	"new hole start 0x%x, size %d\n"
+L.51:
+	.asciiz	"new hole start 0x%x, size %d\n\n"
+L.48:
+	.asciiz	" p addr %d, point at %d, deref val %d\n"
+L.47:
+	.asciiz	"call sbrk\n"
+L.39:
+	.asciiz	"hole start 0x%x, size %d\n"
+L.31:
+	.asciiz	"free mem %x\n"
+L.25:
 	.asciiz	"\r\nfree memory begin 0x%x\r\n"
-L.20:
+L.19:
 	.asciiz	"deq: tail not null"
