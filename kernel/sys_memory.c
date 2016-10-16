@@ -12,7 +12,6 @@ static hole_t *used_holes[2];
 //Linked lists are defined by a head and tail pointer.
 #define HEAD 0
 #define TAIL 1
-#define my_sizeof(var) (char *)(&var+1)-(char*)(&var)
 
 /**
  * Adds a proc to the tail of a list.
@@ -304,20 +303,31 @@ void hole_overview(hole_t **q){
 	}
 }
 
+void *load_BinRecord_Mem(int *lines,size_t length){
+	int i = 0;
+	size_t *temp = NULL;
+	size_t *p = (size_t *)_sbrk(length);
+	temp = p;
+	for (i = 0; i < length; i++) {
+		*p  = lines[i];
+		p++;
+	}
+	return (void *)temp;
+}
+
 
 void init_memory(){
   hole_t *h = NULL;
   int i = 0;
-
+	hole_t arr[2];
+	int size = (char*)&arr[1] - (char*)&arr[0];
+	printf("sizeof hole_t %d\n",size );
 	unused_holes[HEAD] = unused_holes[TAIL] = NULL;
 	used_holes[HEAD] = used_holes[TAIL] = NULL;
 	pending_holes[HEAD] = pending_holes[TAIL] = NULL;
 
 	for ( i = 0; i < NUM_HOLES; i++) {
 		h = &hole_table[i];
-		if (i == 0) {
-			printf("sizeof hole_t %d\n",my_sizeof(h) );
-		}
 		h->start = 0;
 		h->length = 0;
 		h->next = NULL;

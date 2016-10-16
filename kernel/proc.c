@@ -733,6 +733,10 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 void init_proc() {
 	int i;
 	//Initialise queues
+	proc_t arr[2];
+	int size = (char*)&arr[1] - (char*)&arr[0];
+	printf("sizeof proc_t %d\n",size );
+
 	for(i = 0; i < NUM_QUEUES; i++) {
 		ready_q[i][HEAD] = NULL;
 		ready_q[i][TAIL] = NULL;
@@ -742,7 +746,6 @@ void init_proc() {
 	//Add all proc structs to the free list
 	for(i = 0; i < NUM_PROCS; i++) {
 		proc_t *p = &proc_table[i];
-
 		p->state = DEAD;
 
 		enqueue_tail(free_proc, p);

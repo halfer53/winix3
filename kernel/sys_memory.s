@@ -664,15 +664,71 @@ L.107:
 	lw	$ra, 5($sp)
 	addui	$sp, $sp, 6
 	jr	$ra
+.global	load_BinRecord_Mem
+load_BinRecord_Mem:
+	subui	$sp, $sp, 7
+	sw	$5, 1($sp)
+	sw	$6, 2($sp)
+	sw	$7, 3($sp)
+	sw	$12, 4($sp)
+	sw	$13, 5($sp)
+	sw	$ra, 6($sp)
+	addu	$7, $0, $0
+	addu	$5, $0, $0
+	lw	$13, 8($sp)
+	sw	$13, 0($sp)
+	jal	_sbrk
+	addu	$13, $0, $1
+	addu	$6, $0, $13
+	addu	$5, $0, $6
+	addu	$7, $0, $0
+	j	L.116
+L.113:
+	lw	$13, 7($sp)
+	addu	$13, $7, $13
+	lw	$13, 0($13)
+	addu	$13, $0, $13
+	sw	$13, 0($6)
+	addui	$6, $6, 1
+L.114:
+	addi	$7, $7, 1
+L.116:
+	addu	$13, $0, $7
+	lw	$12, 8($sp)
+	sltu	$13, $13, $12
+	bnez	$13, L.113
+	addu	$1, $0, $5
+L.112:
+	lw	$5, 1($sp)
+	lw	$6, 2($sp)
+	lw	$7, 3($sp)
+	lw	$12, 4($sp)
+	lw	$13, 5($sp)
+	lw	$ra, 6($sp)
+	addui	$sp, $sp, 7
+	jr	$ra
 .global	init_memory
 init_memory:
-	subui	$sp, $sp, 7
-	sw	$7, 2($sp)
-	sw	$12, 3($sp)
-	sw	$13, 4($sp)
-	sw	$ra, 5($sp)
-	sw	$0, 6($sp)
+	subui	$sp, $sp, 14
+	sw	$6, 2($sp)
+	sw	$7, 3($sp)
+	sw	$12, 4($sp)
+	sw	$13, 5($sp)
+	sw	$ra, 6($sp)
 	addu	$7, $0, $0
+	addu	$6, $0, $0
+	addui	$13, $sp, 11
+	addu	$13, $0, $13
+	addui	$12, $sp, 8
+	addu	$12, $0, $12
+	subu	$13, $13, $12
+	addu	$13, $0, $13
+	sw	$13, 7($sp)
+	la	$13, L.119
+	sw	$13, 0($sp)
+	lw	$13, 7($sp)
+	sw	$13, 1($sp)
+	jal	printf
 	addu	$13, $0, $0
 	sw	$13, unused_holes+1($0)
 	sw	$13, unused_holes($0)
@@ -682,47 +738,30 @@ init_memory:
 	addu	$13, $0, $0
 	sw	$13, pending_holes+1($0)
 	sw	$13, pending_holes($0)
-	addu	$7, $0, $0
-L.116:
+	addu	$6, $0, $0
+L.123:
 	addui	$13, $0, 3
-	mult	$13, $13, $7
+	mult	$13, $13, $6
 	la	$12, hole_table
-	addu	$13, $13, $12
-	sw	$13, 6($sp)
-	sne	$13, $7, $0
-	bnez	$13, L.120
-	la	$13, L.122
-	sw	$13, 0($sp)
-	addui	$13, $sp, 7
-	addu	$13, $0, $13
-	addui	$12, $sp, 6
-	addu	$12, $0, $12
-	subu	$13, $13, $12
-	addu	$13, $0, $13
-	sw	$13, 1($sp)
-	jal	printf
-L.120:
-	lw	$13, 6($sp)
-	sw	$0, 0($13)
-	lw	$13, 6($sp)
-	sw	$0, 1($13)
-	lw	$13, 6($sp)
-	sw	$0, 2($13)
+	addu	$7, $13, $12
+	sw	$0, 0($7)
+	sw	$0, 1($7)
+	sw	$0, 2($7)
 	la	$13, pending_holes
 	sw	$13, 0($sp)
-	lw	$13, 6($sp)
-	sw	$13, 1($sp)
+	sw	$7, 1($sp)
 	jal	hole_enqueue_head
+L.124:
+	addi	$6, $6, 1
+	slti	$13, $6, 100
+	bnez	$13, L.123
 L.117:
-	addi	$7, $7, 1
-	slti	$13, $7, 100
-	bnez	$13, L.116
-L.112:
-	lw	$7, 2($sp)
-	lw	$12, 3($sp)
-	lw	$13, 4($sp)
-	lw	$ra, 5($sp)
-	addui	$sp, $sp, 7
+	lw	$6, 2($sp)
+	lw	$7, 3($sp)
+	lw	$12, 4($sp)
+	lw	$13, 5($sp)
+	lw	$ra, 6($sp)
+	addui	$sp, $sp, 14
 	jr	$ra
 .bss
 used_holes:
@@ -746,7 +785,7 @@ hole_table:
 .extern	current_proc 1
 .extern	proc_table 1640
 .data
-L.122:
+L.119:
 	.asciiz	"sizeof hole_t %d\n"
 L.111:
 	.asciiz	"hole start %x, length %d\n"

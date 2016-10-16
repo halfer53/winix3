@@ -22,6 +22,7 @@
 #define PROTECTION_TABLE_LEN	32
 #define DEFAULT_STACK_SIZE		200
 #define DEFAULT_CCTRL			0xff9
+#define USER_CCTRL			0x8 //OKU is set to 0
 #define DEFAULT_RBASE			0x00000
 #define DEFAULT_PTABLE			0x00000
 #define DEFAULT_QUANTUM			100

@@ -26,6 +26,8 @@
 #define MAJOR_VERSION 1
 #define MINOR_VERSION 0
 
+#define my_sizeof(var) (char *)(&var+1)-(char*)(&var)
+
 /**
  * Print an error message and lock up the OS... the "Blue Screen of Death"
  *

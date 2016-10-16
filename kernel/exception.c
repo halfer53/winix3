@@ -63,7 +63,7 @@ static void button_handler() {
  **/
 static void timer_handler() {
 	RexTimer->Iack = 0;
-	
+
 	//Increment uptime and call scheduler
 	system_uptime++;
 	sched();
@@ -103,7 +103,7 @@ static void gpf_handler() {
 		current_proc->name,
 		current_proc->proc_index,
 		current_proc->pc);
-	
+
 	//Kill process and call scheduler.
 	end_process(current_proc);
 	current_proc = NULL;
@@ -118,36 +118,37 @@ static void syscall_handler() {
 	int src, dest, operation;
 	message_t *m;
 	int *retval;
-	proc_t *p;	
-	
+	proc_t *p;
+
 	//TODO: the following does not account for virtual memory offsets.
-	operation = *current_proc->sp;				//Operation is the first parameter on the stack
-	dest = *(current_proc->sp + 1);				//Destination is second parameter on the stack
-	m = *(message_t **)(current_proc->sp + 2);	//Message pointer is the third parameter on the stack
+	//cast two variables to to size_t to allow addition of two pointer, and then cast back to pointer
+	operation = *(size_t *)((size_t)current_proc->sp + (size_t)(current_proc->rbase));				//Operation is the first parameter on the stack
+	dest = *(size_t *)((size_t)(current_proc->sp) + (size_t)(current_proc->rbase) + 1);				//Destination is second parameter on the stack
+	m = *(message_t **)((size_t)(current_proc->sp) + (size_t)(current_proc->rbase) + 2);	//Message pointer is the third parameter on the stack
 	m->src = current_proc->proc_index;			//Don't trust the caller to specify their own source process number
 	retval = (int*)&current_proc->regs[0];		//Result is returned in register $1
-	
+
 	//Default return value is an error code
 	*retval = -1;
-	
+
 	//Decode operation
 	switch(operation) {
 		case WINIX_SENDREC:
 			current_proc->flags |= RECEIVING;
 			//fall through to send
-			
+
 		case WINIX_SEND:
 			*retval = wini_send(dest, m);
 			break;
-			
+
 		case WINIX_RECEIVE:
 			*retval = wini_receive(m);
 			break;
-			
+
 		default:
 			break;
 	}
-	
+
 	//A system call could potentially make a high-priority process runnable.
 	//Run scheduler.
 	sched();
@@ -189,7 +190,7 @@ static void no_handler() {
  **/
 static void exception_handler(int estat) {
 	int i;
-	
+
 	//Loop through $estat and call all relevant handlers.
 	for(i = NUM_HANDLERS; i; i--) {
 		if(estat & (1 << i)) {
@@ -207,7 +208,7 @@ static void exception_handler(int estat) {
  **/
 void init_exceptions() {
 	wramp_set_handler(exception_handler);
-	
+
 	RexTimer->Load = 40; //60 Hz
 	RexTimer->Ctrl = 3; //Enabled, auto-restart
 }
