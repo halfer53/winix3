@@ -75,6 +75,7 @@ int testmalloc(int argc, char **argv){
 		printf("lines point at addr %x\n", lines);
 		prev_p = lines;
 	}
+
 	for ( i = 0; i < n; i++) {
 		if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
 			printf("not enough space\n");
@@ -83,6 +84,7 @@ int testmalloc(int argc, char **argv){
 		prev_p_line[i] = lines[i];
 		printf("lines[%d] point at addr %x\n",i, lines);
 	}
+
 
 	strcpy(lines[0],"a");
 	strcpy(lines[1],"ab");
@@ -95,7 +97,7 @@ int testmalloc(int argc, char **argv){
 		free(lines[i]);
 	}
 	free(lines);
-	return 0;
+
 
 	if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
 		printf("not enough space\n");

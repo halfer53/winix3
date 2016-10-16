@@ -98,50 +98,72 @@ static proc_t *dequeue(proc_t **q) {
 	return p;
 }
 
-/**
- * Gets a proc struct that isn't currently in use.
- *
- * Returns:
- *   A pointer to a proc struct that isn't in use.
- *   NULL if there are no free slots in the process table.
- *
- * Side Effects:
- *   A proc struct is removed from the free_proc list, and reinitialised.
- **/
+//return -1 if nothing found
+static int delete(proc_t **q, proc_t *h){
+	proc_t *curr = q[HEAD];
+	proc_t *prev = NULL;
+
+	if(curr == NULL) { //Empty list
+		assert(q[TAIL] == NULL, "delete: tail not null");
+		return -1;
+	}
+
+	while(curr != h && curr != NULL){
+		prev = curr;
+		curr = curr->next;
+	}
+	if (curr != NULL) {
+		if (prev == NULL) {
+			q[HEAD] = q[TAIL] = NULL;
+		}else{
+			prev->next = curr->next;
+		}
+		return 1;
+	}else{
+		return -1;
+	}
+
+}
+
 static proc_t *get_free_proc() {
 	int i;
 	proc_t *p = dequeue(free_proc);
 	size_t *sp = NULL;
 
 	if(p) {
-		//Clear register values
-		for(i = 0; i < NUM_REGS; i++) {
-			p->regs[i] = DEFAULT_REG_VALUE;
-		}
 
-		p->sp = (size_t *)_sbrk(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
-
-		assert(p->sp != NULL,"sp is null");
-
-		p->ra = DEFAULT_RETURN_ADDR;
-		p->pc = DEFAULT_PROGRAM_COUNTER;
-		p->rbase = DEFAULT_RBASE;
-		p->ptable = DEFAULT_PTABLE;
-		p->cctrl = DEFAULT_CCTRL;
-
-		p->priority = 0;
-		p->quantum = DEFAULT_QUANTUM;
-		p->ticks_left = 0;
-		p->time_used = 0;
-		p->state = INITIALISING;
-		p->flags = DEFAULT_FLAGS;
-
-		p->sender_q = NULL;
-		p->next_sender = NULL;
-		p->message = NULL;
+		proc_set_default(p);
+		//malloced_sp
 	}
 	return p;
 }
+
+void proc_set_default(proc_t *p){
+	int i = 0;
+	for(i = 0; i < NUM_REGS; i++) {
+		p->regs[i] = DEFAULT_REG_VALUE;
+	}
+
+	p->ra = DEFAULT_RETURN_ADDR;
+	p->pc = DEFAULT_PROGRAM_COUNTER;
+	p->rbase = DEFAULT_RBASE;
+	p->ptable = DEFAULT_PTABLE;
+	p->cctrl = DEFAULT_CCTRL;
+
+	p->priority = 0;
+	p->quantum = DEFAULT_QUANTUM;
+	p->ticks_left = 0;
+	p->time_used = 0;
+	p->state = INITIALISING;
+	p->flags = DEFAULT_FLAGS;
+
+	p->sender_q = NULL;
+	p->next_sender = NULL;
+	p->message = NULL;
+
+	p->length = 0;
+}
+
 
 /**
  * Chooses a process to run.
@@ -165,21 +187,49 @@ static proc_t *pick_proc() {
 
 	return NULL;
 }
-int fork_proc(proc_t *p1){
-	proc_t *original = p1;
-	proc_t *p = NULL;
-	int priority = 0;
 
+/**
+ * Gets a proc struct that isn't currently in use.
+ *
+ * Returns:
+ *   A pointer to a proc struct that isn't in use.
+ *   NULL if there are no free slots in the process table.
+ *
+ * Side Effects:
+ *   A proc struct is removed from the free_proc list, and reinitialised.
+ **/
+
+
+int fork_proc(proc_t *original){
+	proc_t *p = NULL;
+	void *ptr_base = NULL;
+	int priority = 0;
 	int i = 0;
 
+	if (original->length == 0 || (size_t)(original->rbase) == 0) {
+		//we can't fork p1 if it's a system task
+		printf("%s can't be forked since it's a system task\n",original->name );
+		return -1;
+	}
+
+
 	if(p = get_free_proc()) {
+		//it's best to malloc text segment and stack together, so they stick together, and it's easier to manage
+		ptr_base = _malloc(original->length + DEFAULT_STACK_SIZE);
+		assert(ptr_base != NULL,"memory is full");
+		memcpy(ptr_base,original->rbase,original->length + DEFAULT_STACK_SIZE);
+
+		//p->sp = (size_t *)ptr_base + (size_t)DEFAULT_STACK_SIZE + length;
+		p->sp = original->sp; //SP should be the same if virtual address is take into account
+
+
 		for(i = 0;i<NUM_REGS;i++){
 			p->regs[i] = original->regs[i];
 		}
 		p->priority = original->priority;
-		p->pc = original->pc;
+		p->pc = original->pc; //PC should be the same if virtual address is taken into account
 		p->ra = original->ra;
-		p->rbase = original->rbase;
+		p->rbase = ptr_base;
 		p->cctrl = original->cctrl;
 
 		//Initialise protection table
@@ -207,29 +257,65 @@ int fork_proc(proc_t *p1){
 		p->state = RUNNABLE;
 
 		p->flags = original->flags;
-		process_overview();
+
+		p->length = original->length;
+		//process_overview();
 		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
 		enqueue_tail(ready_q[priority], p);
 		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
-		process_overview();
+		//process_overview();
 	}
 	assert(p != NULL, "Fork");
 
-	// printf("original ptable %x\r\n",(void*)&(original->ptable));
-	// for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
-	// 	printf("0x%x ",(size_t)original->protection_table[i]);
-	// }
-	// printf("\r\nnew ptable %x\r\n",(void*)&(p->ptable));
-	// for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
-	// 	printf("0x%x ",(size_t)p->protection_table[i]);
-	// }
-
-	// printf("\r\noriginal ");
-	// printProceInfo(original);
-	// printf("forked");
-	// printProceInfo(p);
-
 	return p->proc_index;
+}
+
+
+
+proc_t *exec_proc(size_t *lines, size_t length, size_t entry, int priority, char *name){
+	proc_t *p = NULL;
+	void *ptr_base = NULL;
+	int i = 0;
+
+	if(p = get_free_proc()) {
+		//it's best to malloc text segment and stack together, so they stick together, and it's easier to manage
+		ptr_base = _malloc(length + DEFAULT_STACK_SIZE);
+		assert(ptr_base != NULL,"memory is full");
+		memcpy(ptr_base, lines,length);
+
+		//p->sp = (size_t *)ptr_base + (size_t)DEFAULT_STACK_SIZE + length;
+		p->sp = (size_t *)(length + DEFAULT_STACK_SIZE); //SP should be the same if virtual address is take into account
+
+		proc_set_default(p);
+		p->priority = priority;
+		p->pc = (void (*)())entry; //PC should be the same if virtual address is taken into account
+		//p->ra = original->ra;
+		p->rbase = ptr_base;
+
+		//Initialise protection table
+		//TODO: this loop allows unrestricted access to all memory.
+		//Update to only enable memory blocks belonging to the process.
+		p->ptable = p->protection_table;
+		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
+			p->protection_table[i] = 0xffffffff;
+		}
+
+
+		strcpy(p->name,name);
+
+		//Set the process to runnable, and enqueue it.
+		p->state = RUNNABLE;
+
+		p->length = length;
+		//process_overview();
+		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		enqueue_tail(ready_q[priority], p);
+		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		//process_overview();
+	}
+	assert(p != NULL, "exec");
+
+	return p;
 }
 
 /**
@@ -265,12 +351,14 @@ proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 		strcpy(p->name,name);
 
 		//Initialise protection table
-		//TODO: this loop allows unrestricted access to all memory.
+		//TODO: this loop allows unrestricted accesssys to all memory.
 		//Update to only enable memory blocks belonging to the process.
 		p->ptable = p->protection_table;
 		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
 			p->protection_table[i] = 0xffffffff;
 		}
+
+		p->sp = (size_t *)_malloc(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
 
 		//Set the process to runnable, and enqueue it.
 		p->state = RUNNABLE;
@@ -319,7 +407,7 @@ int process_overview(){
 
 //print the process state given
 void printProceInfo(proc_t* curr){
-	printf("name %s, proc_index %d, Stack_Address 0x%x, state %s\r\n",curr->name, curr->proc_index, curr->sp,getStateName(curr->state));
+	printf("name %s, i %d, rbase %x, length %d, pc %x, sp 0x%x, state %s\r\n",curr->name, curr->proc_index, curr->rbase, curr->length,curr->pc,curr->sp,getStateName(curr->state));
 }
 
 //return the strign value of state name give proc_state_t state
@@ -368,7 +456,6 @@ void sched() {
 	if(current_proc->ticks_left == 0) {
 		current_proc->ticks_left = current_proc->quantum;
 	}
-
 	//Load context and run
 	wramp_load_context();
 }
@@ -388,6 +475,58 @@ proc_t *get_proc(int proc_nr) {
 			return p;
 	}
 	return NULL;
+}
+
+proc_t *new_proc_from_binaryRecords(size_t *lines,size_t length, size_t entry, int priority, char *name){
+	proc_t *p = dequeue(free_proc);
+	proc_set_default(p);
+	load_proc_from_binaryRecords(p,lines,length,entry,priority,name);
+	p->state = RUNNABLE;
+	enqueue_tail(ready_q[p->priority], p);
+	return p;
+}
+
+void load_proc_from_binaryRecords(proc_t *p, size_t *lines,size_t length, size_t entry, int priority, char *name){
+	size_t *ptr = NULL;
+	int i = 0;
+	size_t *rbase  = NULL;
+
+	rbase = ptr = (size_t *)_malloc(length + DEFAULT_STACK_SIZE);
+
+	if(!(0 <= priority && priority < NUM_QUEUES)) {
+		return;
+	}
+
+	printf("new malloced start %x, length %d\n",p,length);
+
+	//load the binary values into memory
+	for (i = 0; i < length; i++) {
+		*ptr  = lines[i];
+		ptr++;
+	}
+
+	//Get a free slot in the process table
+
+		p->priority = priority;
+		p->pc = (void (*)())entry;
+
+		strcpy(p->name,name);
+
+		//Initialise protection table
+		//TODO: this loop allows unrestricted accesssys to all memory.
+		//Update to only enable memory blocks belonging to the process.
+		p->ptable = p->protection_table;
+		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
+			p->protection_table[i] = 0xffffffff;
+		}
+
+		p->rbase = rbase;
+		p->sp = (void *)(length + DEFAULT_STACK_SIZE);
+		p->length = length;
+		//Set the process to runnable, and enqueue it.
+		p->state = RUNNABLE;
+		enqueue_tail(ready_q[priority], p);
+
 }
 
 /**
@@ -465,6 +604,38 @@ int winix_exec(char* lines[],int line_length){
 	size_t *base = (size_t*)FREE_MEM_BEGIN;
 
 	return 0;
+}
+
+//p current proc to be replaced
+void *exec_binary(proc_t *p,size_t *lines,size_t length){
+	size_t *ptr_base = NULL;
+	if (p->length == 0 || p->rbase == 0) {
+		printf("can't exec system task\n" );
+		return 0;
+	}
+	if (wipe_proc(p) == 1) {
+		return (void *)load_BinRecord_Mem(lines,length);
+	}
+	return NULL;
+}
+
+int wipe_proc(proc_t *p){
+	int i=0;
+	if (p->rbase == 0 || p->length == 0) {
+		printf("can't exec system task\n" );
+		return -1;
+	}
+
+	for ( i = 0; i < NUM_QUEUES	; i++) {
+		if (delete(ready_q[i],p) != -1) { //upon successful deletion
+			printf("found " );
+			printProceInfo(p);
+			wipe_mem(p->rbase,p->length + DEFAULT_STACK_SIZE);
+			enqueue_tail(free_proc,p);
+			return 1;
+		}
+	}
+	return -1;
 }
 
 
@@ -733,9 +904,9 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 void init_proc() {
 	int i;
 	//Initialise queues
-	proc_t arr[2];
-	int size = (char*)&arr[1] - (char*)&arr[0];
-	printf("sizeof proc_t %d\n",size );
+	// proc_t arr[2];
+	// int size = (char*)&arr[1] - (char*)&arr[0];
+	// printf("sizeof proc_t %d\n",size );
 
 	for(i = 0; i < NUM_QUEUES; i++) {
 		ready_q[i][HEAD] = NULL;

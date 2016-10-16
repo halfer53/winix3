@@ -17,12 +17,12 @@ int putc(const int c) {
 /**
  * Writes a character to serial port 2.
 //  **/
-// int putc2(const int c) {
-// 	//TODO: buffer output and print via system calls.
-// 	while(!(RexSp2->Stat & 2));
-// 	RexSp2->Tx = c;
-// 	return 0;
-// }
+int putc2(const int c) {
+	//TODO: buffer output and print via system calls.
+	while(!(RexSp2->Stat & 2));
+	RexSp2->Tx = c;
+	return 0;
+}
 
 /**
  * Reads a character from serial port 1.

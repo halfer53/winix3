@@ -14,6 +14,7 @@
 #include <stddef.h>
 #include <type.h>
 #include <util.h>
+#include <size.h>
 
 #include "wramp.h"
 #include "proc.h"

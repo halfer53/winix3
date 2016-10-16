@@ -8,6 +8,8 @@
 #include <sys/syscall.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <type.h>
+#include <size.h>
 
 #define BUF_LEN		100
 
@@ -16,9 +18,11 @@ int ps(int argc, char **argv);
 int uptime(int argc, char **argv);
 int shutdown(int argc, char **argv);
 int exit(int argc, char **argv);
-int fork(int argc, char **argv);
-int exec(int argc, char **argv);
+int shell_fork(int argc, char **argv);
+int shell_exec(int argc, char **argv);
+int testmalloc(int argc, char **argv);
 int generic(int argc, char **argv);
+#define my_sizeof(var) (char *)(&var+1)-(char*)(&var)
 
 //Input buffer & tokeniser
 static char buf[BUF_LEN];
@@ -36,8 +40,9 @@ struct cmd commands[] = {
 	{ "shutdown", shutdown },
 	{ "exit", exit },
 	{ "ps", ps },
-	{ "fork", fork },
-	{ "exec", exec },
+	{ "fork", shell_fork },
+	{ "exec", shell_exec },
+	{ "testmal", testmalloc},
 	{ NULL, generic }
 };
 //TODO: ps/uptime/shutdown should be moved to separate programs.
@@ -49,15 +54,100 @@ int isPrintable(int c) {
 	return ('!' <= c && c <= '~');
 }
 
-
-int exec(int argc, char **argv){
-
+int testmalloc(int argc, char **argv){
+	// size_t a = 0;
+	// char b = 'a';
+	// int c = 0;
+	// long d = 0;
+	// size_t *ap = NULL;
+  // char *bp = NULL;
+	// int *cp = NULL;
+	// char **lines = NULL;
+	// int n = 2;
+	// char **prev_p = NULL;
+	// char *prev_p_line[2] = {NULL,NULL};
+	// int i = 0;
+	//
+	// if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
+	// 	printf("not enough space\n");
+	// 	return 0;
+	// }else{
+	// 	printf("lines point at addr %x\n", lines);
+	// 	prev_p = lines;
+	// }
+	// for ( i = 0; i < n; i++) {
+	// 	if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
+	// 		printf("not enough space\n");
+	// 		return 0;
+	// 	}
+	// 	prev_p_line[i] = lines[i];
+	// 	printf("lines[%d] point at addr %x\n",i, lines);
+	// }
+	//
+	// strcpy(lines[0],"a");
+	// strcpy(lines[1],"ab");
+	//
+	// for ( i = 0; i < n; i++) {
+	// 	printf("line %d content %s\n",i,lines[i] );
+	// }
+	//
+	// for ( i = 0; i < n; i++) {
+	// 	free(lines[i]);
+	// }
+	// free(lines);
+	// return 0;
+	//
+	// if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
+	// 	printf("not enough space\n");
+	// 	return 0;
+	// }else{
+	// 	if (prev_p != lines) {
+	// 		printf(" incorrect free, new addr at %x, old addr at %x\n",lines,prev_p );
+	//
+	// 	}
+	// }
+	// for ( i = 0; i < n; i++) {
+	// 	if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
+	// 		printf("not enough space\n");
+	// 		return 0;
+	// 	}
+	// 	if (prev_p_line[i] != lines[i]) {
+	// 		printf(" incorrect free, new addr at %x, old addr at %x\n",lines[i],prev_p_line[i] );
+	//
+	// 	}
+	//
+	// }
+	//
+	//
+	//
+	// // printf("unsigned long %d\n",my_sizeof(a) );
+	//  printf("char pointer size %d\n",my_sizeof(bp) );
+	// // printf("int %d\n",my_sizeof(c) );
+	// // printf("long %d\n",my_sizeof(d) );
+	//
+ // 	ap =	(size_t *)malloc(SIZE_T_SIZE);
+	// *ap = 1;
+	// printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
+	//
+	// bp = (char *)malloc(CHAR_SIZE);
+	// *bp = 'b';
+	// printf("char malloced ap addr %d, val %c\n",bp,*bp);
+	// printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
+	//
+	// free(ap);
+	// printf("free size_t\n");
+	// printf("char malloced ap addr %d, val %c\n",bp,*bp);
+	// printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
 	return 0;
 }
 
-int fork(int argc, char **argv){
+int shell_exec(int argc, char **argv){
+
+	return 0;
+}
+int shell_fork(int argc, char **argv){
 	int forkid = 0;
-	forkid = sys_fork();
+	forkid = fork();
 	return 0;
 }
 
@@ -116,12 +206,13 @@ int generic(int argc, char **argv) {
 	return -1;
 }
 
-int main() {
+void main() {
 	int i, j;
 	int argc;
 	char *c;
 	struct cmd *handler = NULL;
-
+	uptime(0,NULL);
+	shell_fork(0,NULL);
 	while(1) {
 		printf("WINIX> ");
 
@@ -180,5 +271,4 @@ int main() {
 		//Run it
 		handler->handle(argc, tokens);
 	}
-	return 0;
 }

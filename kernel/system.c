@@ -63,6 +63,7 @@ void system_main() {
 
 	//Receive message, do work, repeat.
 	while(1) {
+
 		message_t m;
 		int who;
 		proc_t *p;
@@ -74,10 +75,10 @@ void system_main() {
 		winix_receive(&m);
 		who = m.src;
 		p = &proc_table[who];
-
+		//putc2('a');
 		//Do the work
 		switch(m.type) {
-
+			printf("who %d\n",who );
 			//Gets the system uptime.
 			case SYSCALL_UPTIME:
 				m.i1 = system_uptime;

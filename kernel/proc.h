@@ -81,6 +81,9 @@ typedef struct proc {
 	/* Process Table Index */
 	int proc_index;		//Index in the process table
 
+	unsigned long length;
+	unsigned long *malloced_ba;
+
 } proc_t;
 
 //The process table.
@@ -90,7 +93,7 @@ extern proc_t proc_table[NUM_PROCS];
  * Initialises the process table and scheduling queues.
  **/
 void init_proc();
-
+void proc_set_default(proc_t *p);
 /**
  * Creates a new process and adds it to the runnable queue.
  **/
@@ -121,6 +124,7 @@ proc_t *get_proc(int proc_nr);
 
 //void *p_malloc(size_t size);
 
+
 //fork the next process in the ready_q, return the new proc_index of the forked process
 //side effect: the head of the free_proc is dequeued, and added to the ready_q with all relevant values equal
 //to the original process, except stack pointer.
@@ -130,6 +134,12 @@ int fork_proc(proc_t *p);
 int process_overview();
 void printProceInfo(proc_t* curr);
 char* getStateName(proc_state_t state);
+
+proc_t *new_proc_from_binaryRecords( size_t *lines,size_t length, size_t entry, int priority, char *name);
+void load_proc_from_binaryRecords(proc_t *p, size_t *lines,size_t length, size_t entry, int priority, char *name);
+void *exec_binary(proc_t *p,size_t *lines,size_t length);
+int wipe_proc(proc_t *p);
+
 /**
  * Receives a message.
  *
@@ -151,6 +161,9 @@ int wini_send(int dest, message_t *m);
  * Returns:			0
  **/
 int wini_receive(message_t *m);
+
+proc_t *exec_proc(size_t *lines, size_t length, size_t entry, int priority, char *name);
+
 
 /**
  * Pointer to the current process.

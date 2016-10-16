@@ -14,3 +14,5 @@ test
 !kernel/util/limits_head.s
 !kernel/util/limits_tail.s
 *.c~
+testing.c
+static.c

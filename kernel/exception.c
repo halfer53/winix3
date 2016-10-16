@@ -119,15 +119,21 @@ static void syscall_handler() {
 	message_t *m;
 	int *retval;
 	proc_t *p;
+	size_t *sp;
 
 	//TODO: the following does not account for virtual memory offsets.
 	//cast two variables to to size_t to allow addition of two pointer, and then cast back to pointer
-	operation = *(size_t *)((size_t)current_proc->sp + (size_t)(current_proc->rbase));				//Operation is the first parameter on the stack
-	dest = *(size_t *)((size_t)(current_proc->sp) + (size_t)(current_proc->rbase) + 1);				//Destination is second parameter on the stack
-	m = *(message_t **)((size_t)(current_proc->sp) + (size_t)(current_proc->rbase) + 2);	//Message pointer is the third parameter on the stack
+	sp = (size_t *)((size_t)(current_proc->sp) + (size_t)(current_proc->rbase));
+
+	printProceInfo(current_proc);
+
+
+	operation = *(sp);				//Operation is the first parameter on the stack
+	dest = *(sp+1);				//Destination is second parameter on the stack
+	m = *(message_t **)(sp+ 2);	//Message pointer is the third parameter on the stack
 	m->src = current_proc->proc_index;			//Don't trust the caller to specify their own source process number
 	retval = (int*)&current_proc->regs[0];		//Result is returned in register $1
-
+	printf(" sp %x, operation %d, dest %d\n",sp,operation,dest );
 	//Default return value is an error code
 	*retval = -1;
 
