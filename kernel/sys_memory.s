@@ -338,6 +338,21 @@ L.61:
 	bnez	$13, L.62
 	lw	$13, 0($6)
 	sw	$13, 10($sp)
+	lw	$13, 1($6)
+	lw	$12, 11($sp)
+	sneu	$13, $13, $12
+	bnez	$13, L.64
+	la	$13, unused_holes
+	sw	$13, 0($sp)
+	sw	$7, 1($sp)
+	sw	$6, 2($sp)
+	jal	hole_delete2
+	la	$13, used_holes
+	sw	$13, 0($sp)
+	sw	$6, 1($sp)
+	jal	merge_holes
+	j	L.65
+L.64:
 	lw	$13, 11($sp)
 	lw	$12, 0($6)
 	addu	$13, $13, $12
@@ -347,19 +362,20 @@ L.61:
 	lw	$11, 11($sp)
 	subu	$12, $12, $11
 	sw	$12, 0($13)
-	lw	$13, 1($6)
-	sneu	$13, $13, $0
-	bnez	$13, L.64
-	la	$13, unused_holes
-	sw	$13, 0($sp)
-	sw	$7, 1($sp)
-	sw	$6, 2($sp)
-	jal	hole_delete2
 	la	$13, pending_holes
+	sw	$13, 0($sp)
+	jal	hole_dequeue
+	addu	$13, $0, $1
+	addu	$6, $0, $13
+	lw	$13, 10($sp)
+	sw	$13, 0($6)
+	lw	$13, 11($sp)
+	sw	$13, 1($6)
+	la	$13, used_holes
 	sw	$13, 0($sp)
 	sw	$6, 1($sp)
 	jal	hole_enqueue_head
-L.64:
+L.65:
 	lw	$1, 10($sp)
 	j	L.55
 L.62:
@@ -452,7 +468,9 @@ L.80:
 	addu	$13, $0, $1
 	seq	$13, $13, $0
 	bnez	$13, L.76
-	sw	$6, 0($sp)
+	la	$13, unused_holes
+	sw	$13, 0($sp)
+	sw	$6, 1($sp)
 	jal	merge_holes
 	addu	$13, $0, $1
 	seq	$13, $13, $0
@@ -482,8 +500,9 @@ merge_holes:
 	sw	$12, 4($sp)
 	sw	$13, 5($sp)
 	sw	$ra, 6($sp)
-	lw	$7, unused_holes($0)
 	lw	$13, 7($sp)
+	lw	$7, 0($13)
+	lw	$13, 8($sp)
 	lw	$12, 1($13)
 	lw	$13, 0($13)
 	addu	$13, $12, $13
@@ -493,7 +512,7 @@ merge_holes:
 	addu	$12, $0, $12
 	sneu	$13, $13, $12
 	bnez	$13, L.90
-	lw	$13, 7($sp)
+	lw	$13, 8($sp)
 	lw	$12, FREE_MEM_BEGIN($0)
 	lw	$11, 1($13)
 	subu	$12, $12, $11
@@ -509,20 +528,20 @@ L.89:
 	lw	$12, 0($7)
 	addu	$13, $13, $12
 	addu	$13, $0, $13
-	lw	$12, 7($sp)
+	lw	$12, 8($sp)
 	lw	$12, 0($12)
 	addu	$12, $0, $12
 	sneu	$13, $13, $12
 	bnez	$13, L.92
 	addui	$13, $7, 1
 	lw	$12, 0($13)
-	lw	$11, 7($sp)
+	lw	$11, 8($sp)
 	lw	$11, 1($11)
 	addu	$12, $12, $11
 	sw	$12, 0($13)
 	j	L.91
 L.92:
-	lw	$13, 7($sp)
+	lw	$13, 8($sp)
 	lw	$12, 1($13)
 	lw	$13, 0($13)
 	addu	$13, $12, $13
@@ -532,13 +551,13 @@ L.92:
 	sneu	$13, $13, $12
 	bnez	$13, L.94
 	lw	$13, 0($7)
-	lw	$12, 7($sp)
+	lw	$12, 8($sp)
 	lw	$12, 1($12)
 	subu	$13, $13, $12
 	sw	$13, 0($7)
 	addui	$13, $7, 1
 	lw	$12, 0($13)
-	lw	$11, 7($sp)
+	lw	$11, 8($sp)
 	lw	$11, 1($11)
 	addu	$12, $12, $11
 	sw	$12, 0($13)
@@ -555,15 +574,15 @@ L.91:
 	bnez	$13, L.96
 	la	$13, pending_holes
 	sw	$13, 0($sp)
-	lw	$13, 7($sp)
+	lw	$13, 8($sp)
 	sw	$13, 1($sp)
 	jal	hole_enqueue_head
 	addui	$1, $0, 1
 	j	L.86
 L.96:
-	la	$13, unused_holes
-	sw	$13, 0($sp)
 	lw	$13, 7($sp)
+	sw	$13, 0($sp)
+	lw	$13, 8($sp)
 	sw	$13, 1($sp)
 	jal	hole_enqueue_head
 	addu	$1, $0, $0

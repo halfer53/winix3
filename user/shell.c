@@ -110,6 +110,7 @@ int testmalloc(int argc, char **argv){
 
 		}
 	}
+	holes_overview();
 	for ( i = 0; i < n; i++) {
 		if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
 			printf("not enough space\n");
