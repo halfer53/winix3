@@ -1,5 +1,5 @@
 typedef struct _hole{
-  void *start;
+  size_t *start;
   unsigned long length;
   struct _hole *next;
 }hole_t;
@@ -12,5 +12,4 @@ static hole_t *hole_dequeue(hole_t **q);
 void Scan_FREE_MEM_BEGIN();
 void *_sbrk(size_t size);
 void *_malloc(size_t size);
-void hole_overview(hole_t **q);
 void init_memory();

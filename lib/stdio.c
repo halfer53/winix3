@@ -1,37 +1,36 @@
 #include <stdio.h>
 #include <sys/ipc.h>
 #include <sys/syscall.h>
-#include <sys/rex.h>
-//TODO: remove rex.h include
+//#include <sys/rex.h>
 
 /**
  * Writes a character to serial port 1.
  **/
-int putc(const int c) {
-	//TODO: buffer output and print via system calls.
-	while(!(RexSp1->Stat & 2));
-	RexSp1->Tx = c;
-	return 0;
-}
-
-/**
- * Writes a character to serial port 2.
+// int putc(const int c) {
+// 	//TODO: buffer output and print via system calls.
+// 	while(!(RexSp1->Stat & 2));
+// 	RexSp1->Tx = c;
+// 	return 0;
+// }
+//
+// /**
+//  * Writes a character to serial port 2.
+// //  **/
+// int putc2(const int c) {
+// 	//TODO: buffer output and print via system calls.
+// 	while(!(RexSp2->Stat & 2));
+// 	RexSp2->Tx = c;
+// 	return 0;
+// }
+//
+// /**
+//  * Reads a character from serial port 1.
 //  **/
-int putc2(const int c) {
-	//TODO: buffer output and print via system calls.
-	while(!(RexSp2->Stat & 2));
-	RexSp2->Tx = c;
-	return 0;
-}
-
-/**
- * Reads a character from serial port 1.
- **/
-int getc() {
-	//TODO: user interrupt-driven I/O
-	while(!(RexSp1->Stat & 1));
-	return RexSp1->Rx;
-}
+// int getc() {
+// 	//TODO: user interrupt-driven I/O
+// 	while(!(RexSp1->Stat & 1));
+// 	return RexSp1->Rx;
+// }
 
 /**
  * Get a character from serial port 2

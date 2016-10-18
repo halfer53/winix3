@@ -88,3 +88,29 @@ void free(void *ptr){
 	m.p1 = ptr;
 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 }
+
+void holes_overview(){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_HOLE_OVERVIEW;
+	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
+}
+
+int getc(){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_GETC;
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	return response;
+}
+
+void putc(int i){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_PUTC;
+	m.i1 = i;
+	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
+}

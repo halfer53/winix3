@@ -19,15 +19,5 @@ stat:
 	@find . -name "*.h" -exec cat {} \; | wc -l
 	@echo "Assembly LoC: "
 	@find . -name "*.s" -exec cat {} \; | wc -l
-shell:
-	cp user/shell.c .
-	wcc -S shell.c
-	wasm shell.s
-	wlink -o shell.srec shell.o lib/string.o lib/syscall.o lib/ipc.o lib/wramp_syscall.o
-	java reformat_srec shell.srec
-	rm shell.c
-	rm shell.o
-	rm shell.s
-	
 	
 .DELETE_ON_ERROR:

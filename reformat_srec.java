@@ -23,7 +23,7 @@ public class reformat_srec{
      String newcontent = "";
 
      recordCount+=2;
-     String recordCountdata = Long.toHexString(recordCount);
+     String recordCountdata = Long.toHexString(recordCount).toUpperCase();
      //System.out.println(wordsCount);
      recordCountdata = AddZeroToFrontToFormPairsMin4(recordCountdata);
 
@@ -33,7 +33,7 @@ public class reformat_srec{
 
      newcontent += ("S5" + AddZeroToFrontToFormPairs(byteCount) + recordCountdata + AddZeroToFrontToFormPairs(checksum)) + "\n";
 
-     String wordsCountdata = Long.toHexString(wordsCount);
+     String wordsCountdata = Long.toHexString(wordsCount).toUpperCase();
 
      //System.out.println(wordsCountdata);
      wordsCountdata = AddZeroToFrontToFormPairsMin4(wordsCountdata);
@@ -49,8 +49,8 @@ public class reformat_srec{
      }
      newcontent += ("S6" + AddZeroToFrontToFormPairs(byteCount) + wordsCountdata + AddZeroToFrontToFormPairs(checksum)) + "\n";
 
-     System.out.print(newcontent);
-     System.out.print(content);
+     //System.out.print(newcontent);
+     //System.out.print(content);
 
      File rewritefile = new File(filename);
      FileOutputStream fos = new FileOutputStream(rewritefile,false);
@@ -67,7 +67,7 @@ public class reformat_srec{
    }
   }
   public String AddZeroToFrontToFormPairs(long i){
-    String s = Long.toHexString(i);
+    String s = Long.toHexString(i).toUpperCase();
     if (s.length() % 2 != 0) {
       s = new StringBuilder(s).insert(0,"0").toString();
     }
@@ -215,6 +215,7 @@ public class reformat_srec{
 
                     case 7: //entry point for the program.
                         // CPU.PC = (long)address;
+                        System.out.println(address);
                         break;
                 }
             }

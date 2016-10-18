@@ -72,7 +72,7 @@ int testmalloc(int argc, char **argv){
 		printf("not enough space\n");
 		return 0;
 	}else{
-		printf("lines point at addr %x\n", lines);
+
 		prev_p = lines;
 	}
 
@@ -82,29 +82,31 @@ int testmalloc(int argc, char **argv){
 			return 0;
 		}
 		prev_p_line[i] = lines[i];
-		printf("lines[%d] point at addr %x\n",i, lines);
+
 	}
 
 
 	strcpy(lines[0],"a");
 	strcpy(lines[1],"ab");
 
-	for ( i = 0; i < n; i++) {
-		printf("line %d content %s\n",i,lines[i] );
-	}
+	// for ( i = 0; i < n; i++) {
+	// 	printf("line %d content %s\n",i,lines[i] );
+	// }
 
+	//holes_overview();
 	for ( i = 0; i < n; i++) {
 		free(lines[i]);
+		holes_overview();
 	}
 	free(lines);
 
-
+	holes_overview();
 	if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
 		printf("not enough space\n");
 		return 0;
 	}else{
 		if (prev_p != lines) {
-			printf(" incorrect free, new addr at %x, old addr at %x\n",lines,prev_p );
+			printf("incorrect free, new addr at %x, old addr at %x\n",lines,prev_p );
 
 		}
 	}
@@ -114,32 +116,12 @@ int testmalloc(int argc, char **argv){
 			return 0;
 		}
 		if (prev_p_line[i] != lines[i]) {
-			printf(" incorrect free, new addr at %x, old addr at %x\n",lines[i],prev_p_line[i] );
+			printf("incorrect free, new addr at %x, old addr at %x\n",lines[i],prev_p_line[i] );
 
 		}
+		holes_overview();
 
 	}
-
-
-
-	// printf("unsigned long %d\n",my_sizeof(a) );
-	 printf("char pointer size %d\n",my_sizeof(bp) );
-	// printf("int %d\n",my_sizeof(c) );
-	// printf("long %d\n",my_sizeof(d) );
-
- 	ap =	(size_t *)malloc(SIZE_T_SIZE);
-	*ap = 1;
-	printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
-
-	bp = (char *)malloc(CHAR_SIZE);
-	*bp = 'b';
-	printf("char malloced ap addr %d, val %c\n",bp,*bp);
-	printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
-
-	free(ap);
-	printf("free size_t\n");
-	printf("char malloced ap addr %d, val %c\n",bp,*bp);
-	printf("size_t malloced ap addr %d, val %d\n",ap,*ap);
 	return 0;
 }
 

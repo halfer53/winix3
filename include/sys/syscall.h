@@ -11,8 +11,8 @@
 /**
  * System Call Numbers
  **/
-#define SYSCALL_GETC1		1
-#define SYSCALL_GETC2		2
+#define SYSCALL_GETC		1
+#define SYSCALL_HOLE_OVERVIEW		2
 #define SYSCALL_PS			3
 #define SYSCALL_UPTIME		4
 #define SYSCALL_EXIT		5
@@ -23,6 +23,7 @@
 #define SYSCALL_SBRK    10
 #define SYSCALL_MALLOC    11
 #define SYSCALL_FREE    12
+#define SYSCALL_PUTC    13
 //TODO: create a sensible allocation scheme for system call numbers
 
 /**
@@ -46,5 +47,9 @@ int sys_fork();
 int sys_exec(char* lines[],int length);
 
 void *sbrk(unsigned long size);
+
+void *_malloc(unsigned long size);
+void _free(void *ptr_parameter);
+void hole_list_overview();
 
 #endif

@@ -78,8 +78,14 @@ void system_main() {
 		//putc2('a');
 		//Do the work
 		switch(m.type) {
-			printf("who %d\n",who );
+			//printf("who %d\n",who );
 			//Gets the system uptime.
+			case SYSCALL_GETC:
+				response = sys_getc();
+				m.i1 = response;
+				winix_send(who,&m);
+				break;
+
 			case SYSCALL_UPTIME:
 				m.i1 = system_uptime;
 				winix_send(who, &m);
@@ -118,6 +124,14 @@ void system_main() {
 
 			case SYSCALL_FREE:
 				_free(m.p1);
+				break;
+
+			case SYSCALL_HOLE_OVERVIEW:
+				hole_list_overview();
+				break;
+
+			case SYSCALL_PUTC:
+				sys_putc(m.i1);
 				break;
 
 			//System call number is unknown, or not yet implemented.

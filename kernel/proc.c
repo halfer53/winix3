@@ -357,8 +357,8 @@ proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
 			p->protection_table[i] = 0xffffffff;
 		}
-
-		p->sp = (size_t *)_malloc(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
+		//don't have to double check
+		p->sp = (size_t *)_sbrk(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
 
 		//Set the process to runnable, and enqueue it.
 		p->state = RUNNABLE;
@@ -614,7 +614,7 @@ void *exec_binary(proc_t *p,size_t *lines,size_t length){
 		return 0;
 	}
 	if (wipe_proc(p) == 1) {
-		return (void *)load_BinRecord_Mem(lines,length);
+		//return (void *)load_BinRecord_Mem(lines,length);
 	}
 	return NULL;
 }
@@ -630,7 +630,7 @@ int wipe_proc(proc_t *p){
 		if (delete(ready_q[i],p) != -1) { //upon successful deletion
 			printf("found " );
 			printProceInfo(p);
-			wipe_mem(p->rbase,p->length + DEFAULT_STACK_SIZE);
+			//wipe_mem(p->rbase,p->length + DEFAULT_STACK_SIZE);
 			enqueue_tail(free_proc,p);
 			return 1;
 		}
@@ -925,4 +925,10 @@ void init_proc() {
 
 	//No current process yet.
 	current_proc = NULL;
+}
+
+int sizeof_proc_t(){
+	hole_t arr[2];
+	int size = (char*)&arr[1] - (char*)&arr[0];
+	return size;
 }
