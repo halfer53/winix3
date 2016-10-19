@@ -1,2 +1,2 @@
-int sys_putc(const int c);
-int sys_getc();
+int kputc(const int c);
+int kgetc();

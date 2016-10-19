@@ -23,11 +23,13 @@ shell:
 	cp user/shell.c .
 	wcc -S shell.c
 	wasm shell.s
-	wlink -o shell.srec shell.o lib/string.o lib/syscall.o lib/ipc.o lib/wramp_syscall.o
+	wlink -o shell.srec shell.o lib/string.o lib/stdio.o lib/syscall.o lib/ipc.o lib/wramp_syscall.o
 	java reformat_srec shell.srec
 	rm shell.c
 	rm shell.o
 	rm shell.s
+	gcc testing.c -o testing
+	./testing > shell.bin.txt
 	
 	
 .DELETE_ON_ERROR:

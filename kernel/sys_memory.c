@@ -132,7 +132,7 @@ void Scan_FREE_MEM_BEGIN(){
 	FREE_MEM_BEGIN |= 0x03ff;
 	FREE_MEM_BEGIN++;
 
-	printf("\r\nfree memory begin 0x%x\r\n",FREE_MEM_BEGIN );
+	kprintf("\r\nfree memory begin 0x%x\r\n",FREE_MEM_BEGIN );
 }
 
 void *_sbrk(size_t size){
@@ -148,7 +148,7 @@ void *_sbrk(size_t size){
   }
 
   FREE_MEM_BEGIN += size;
-	//printf("free mem %x\n",FREE_MEM_BEGIN );
+	//kprintf("free mem %x\n",FREE_MEM_BEGIN );
   return (void *)temp;
 }
 
@@ -172,21 +172,25 @@ void *_malloc(size_t size){
   if (h != NULL) {
 		//if we've found a hole taht is big enough
 		old_base = h->start;
-		h->start += size;
-		h->length -= size;
-
-		if (h->length == 0) {
+		if (h->length == size) {
 			hole_delete2(unused_holes,prev,h);
-			hole_enqueue_head(pending_holes,h);
+			hole_enqueue_head(used_holes,h);
+		}else{
+			h->start += size;
+			h->length -= size;
+			h = hole_dequeue(pending_holes);
+			h->start = old_base;
+			h->length = size;
+			hole_enqueue_head(used_holes,h);
 		}
-		//printf("malloc: curr hole start 0x%x, length %d\n",old_base,h->length );
+		//kprintf("malloc: curr hole start 0x%x, length %d\n",old_base,h->length );
 		return (void *)old_base;
   }else{
 		if ((p_start_addr = (size_t *)_sbrk(size)) != NULL) {
 			if (h = hole_dequeue(pending_holes)) {
 				h->start = p_start_addr;
 				h->length = size;
-				//printf("malloc: sbrk start 0x%x, length %d\n",h->start,h->length );
+				//kprintf("malloc: sbrk start 0x%x, length %d\n",h->start,h->length );
 				hole_enqueue_head(used_holes,h);
 				return p_start_addr;
 			}
@@ -207,7 +211,7 @@ void _free(void *ptr_parameter){
 		h = h->next;
 	}
 	if (h != NULL) {
-		//printf("free: found start 0x%x, length %d\n",h->start,h->length );
+		//kprintf("free: found start 0x%x, length %d\n",h->start,h->length );
 		for ( i = 0; i < h->length; i++) {
 			*p = DEFAULT_MEM_VALUE;
 			p++;
@@ -215,38 +219,38 @@ void _free(void *ptr_parameter){
 
 		if (hole_delete(used_holes, h)) {
 
-			if (merge_holes(h)) {
-				//printf("holes merged\n" );
+			if (merge_holes(unused_holes,h)) {
+				//kprintf("holes merged\n" );
 			}
 		}
 
 	}else{
-		printf("nothing found to be freed at addr %x\n",ptr_parameter );
+		kprintf("nothing found to be freed at addr %x\n",ptr_parameter );
 	}
 }
 
 //h must be a hole_t that doesn't below to any
-int merge_holes(hole_t *h){
+int merge_holes(hole_t **merging_holes_list,hole_t *h){
 
-		register hole_t *curr = unused_holes[HEAD];
+		register hole_t *curr = merging_holes_list[HEAD];
 
 		if (h->start + h->length == (size_t *)FREE_MEM_BEGIN) {
-			//printf("free mem %x, start %x, length %d, total %x\n",FREE_MEM_BEGIN,h->start,h->length,(size_t)(h->start + h->length) );
+			//kprintf("free mem %x, start %x, length %d, total %x\n",FREE_MEM_BEGIN,h->start,h->length,(size_t)(h->start + h->length) );
 			FREE_MEM_BEGIN -= h->length;
 			hole_enqueue_head(pending_holes,h);
 			return 1;
 		}
 		while(curr != NULL){
 			if (curr->start + curr->length == h->start) {
-				//printf("before start 0x%x, length %d start 0x%x, length %d\n",h->start,h->length,curr->start,curr->length);
+				//kprintf("before start 0x%x, length %d start 0x%x, length %d\n",h->start,h->length,curr->start,curr->length);
 				curr->length += h->length;
-				//printf("merged hole, start 0x%x, length %d\n",curr->start,curr->length);
+				//kprintf("merged hole, start 0x%x, length %d\n",curr->start,curr->length);
 				break;
 			}else if(h->start + h->length == curr->start){
-				//printf("before start 0x%x, length %d start 0x%x, length %d\n",h->start,h->length,curr->start,curr->length);
+				//kprintf("before start 0x%x, length %d start 0x%x, length %d\n",h->start,h->length,curr->start,curr->length);
 				curr->start -= h->length;
 				curr->length += h->length;
-				//printf("merged hole, start 0x%x, length %d\n",curr->start,curr->length);
+				//kprintf("merged hole, start 0x%x, length %d\n",curr->start,curr->length);
 				break;
 			}
 			curr = curr->next;
@@ -259,7 +263,7 @@ int merge_holes(hole_t *h){
 		return 1;
 	}else{
 
-		hole_enqueue_head(unused_holes,h);
+		hole_enqueue_head(merging_holes_list,h);
 
 		return 0;
 	}
@@ -268,19 +272,19 @@ int merge_holes(hole_t *h){
 void hole_list_overview(){
 	hole_t *curr = unused_holes[HEAD];
 	if (curr == NULL) {
-		printf("unused hole empty\n" );
+		kprintf("unused hole empty\n" );
 	}
 	while (curr != NULL) {
-		printf("unused hole start %x, length %d\n",curr->start,curr->length );
+		kprintf("unused hole start %x, length %d\n",curr->start,curr->length );
 		curr = curr->next;
 	}
 
 	curr = used_holes[HEAD];
 	if (curr == NULL) {
-		printf("used holes empty\n" );
+		kprintf("used holes empty\n" );
 	}
 	while (curr != NULL) {
-		printf("used hole start %x, length %d\n",curr->start,curr->length );
+		kprintf("used hole start %x, length %d\n",curr->start,curr->length );
 		curr = curr->next;
 	}
 

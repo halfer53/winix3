@@ -208,7 +208,7 @@ int fork_proc(proc_t *original){
 
 	if (original->length == 0 || (size_t)(original->rbase) == 0) {
 		//we can't fork p1 if it's a system task
-		printf("%s can't be forked since it's a system task\n",original->name );
+		kprintf("%s can't be forked since it's a system task\n",original->name );
 		return -1;
 	}
 
@@ -260,9 +260,9 @@ int fork_proc(proc_t *original){
 
 		p->length = original->length;
 		//process_overview();
-		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		//kprintf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
 		enqueue_tail(ready_q[priority], p);
-		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		//kprintf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
 		//process_overview();
 	}
 	assert(p != NULL, "Fork");
@@ -300,7 +300,6 @@ proc_t *exec_proc(size_t *lines, size_t length, size_t entry, int priority, char
 			p->protection_table[i] = 0xffffffff;
 		}
 
-
 		strcpy(p->name,name);
 
 		//Set the process to runnable, and enqueue it.
@@ -308,9 +307,9 @@ proc_t *exec_proc(size_t *lines, size_t length, size_t entry, int priority, char
 
 		p->length = length;
 		//process_overview();
-		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		//kprintf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
 		enqueue_tail(ready_q[priority], p);
-		//printf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		//kprintf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
 		//process_overview();
 	}
 	assert(p != NULL, "exec");
@@ -390,11 +389,11 @@ int process_overview(){
 	int i=0;
 	proc_t *curr = NULL;
 	if (current_proc != NULL) {
-		printf("\r\ncurrent_proc sp 0x%x name %s state %s\r\n", current_proc->sp,current_proc->name,getStateName(current_proc->state));
+		kprintf("\r\ncurrent_proc sp 0x%x name %s state %s\r\n", current_proc->sp,current_proc->name,getStateName(current_proc->state));
 	}
 	for (i=0; i < NUM_QUEUES; i++) {
 		if (ready_q[i][HEAD] != NULL) {
-			printf("\r\npriority %d\r\n",i );
+			kprintf("\r\npriority %d\r\n",i );
 			curr = ready_q[i][HEAD];
 			while(curr != NULL){
 				printProceInfo(curr);
@@ -407,7 +406,7 @@ int process_overview(){
 
 //print the process state given
 void printProceInfo(proc_t* curr){
-	printf("name %s, i %d, rbase %x, length %d, pc %x, sp 0x%x, state %s\r\n",curr->name, curr->proc_index, curr->rbase, curr->length,curr->pc,curr->sp,getStateName(curr->state));
+	kprintf("name %s, i %d, rbase %x, length %d, pc %x, sp 0x%x, state %s\r\n",curr->name, curr->proc_index, curr->rbase, curr->length,curr->pc,curr->sp,getStateName(curr->state));
 }
 
 //return the strign value of state name give proc_state_t state
@@ -497,7 +496,7 @@ void load_proc_from_binaryRecords(proc_t *p, size_t *lines,size_t length, size_t
 		return;
 	}
 
-	printf("new malloced start %x, length %d\n",p,length);
+	kprintf("new malloced start %x, length %d\n",p,length);
 
 	//load the binary values into memory
 	for (i = 0; i < length; i++) {
@@ -610,7 +609,7 @@ int winix_exec(char* lines[],int line_length){
 void *exec_binary(proc_t *p,size_t *lines,size_t length){
 	size_t *ptr_base = NULL;
 	if (p->length == 0 || p->rbase == 0) {
-		printf("can't exec system task\n" );
+		kprintf("can't exec system task\n" );
 		return 0;
 	}
 	if (wipe_proc(p) == 1) {
@@ -622,13 +621,13 @@ void *exec_binary(proc_t *p,size_t *lines,size_t length){
 int wipe_proc(proc_t *p){
 	int i=0;
 	if (p->rbase == 0 || p->length == 0) {
-		printf("can't exec system task\n" );
+		kprintf("can't exec system task\n" );
 		return -1;
 	}
 
 	for ( i = 0; i < NUM_QUEUES	; i++) {
 		if (delete(ready_q[i],p) != -1) { //upon successful deletion
-			printf("found " );
+			kprintf("found " );
 			printProceInfo(p);
 			//wipe_mem(p->rbase,p->length + DEFAULT_STACK_SIZE);
 			enqueue_tail(free_proc,p);
@@ -658,8 +657,8 @@ int winix_load_srec_data_length(char *line){
         index = 0;
         checksum = 0;
 
-				printf("%s\r\n",line);
-        //printf("loop %d\n",linecount );
+				kprintf("%s\r\n",line);
+        //kprintf("loop %d\n",linecount );
 				//Start code, always 'S'
 				assert(line[index++] == 'S',"Expecting S");
 
@@ -667,12 +666,12 @@ int winix_load_srec_data_length(char *line){
         if (recordType == 5 || recordType == 6) {
 
         }else{
-          printf("recordType %d\n",recordType );
-          printf("format is incorrect\n" );
+          kprintf("recordType %d\n",recordType );
+          kprintf("format is incorrect\n" );
           return -1;
         }
         tempBufferCount = Substring(buffer,line,index,2);
-				//printf("record value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				//kprintf("record value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				byteCount = hex2int(buffer,tempBufferCount);
         index += 2;
         checksum += byteCount;
@@ -680,32 +679,32 @@ int winix_load_srec_data_length(char *line){
 				assert(byteCount<255,"byteCount bigger than 255");
 
 						tempBufferCount = Substring(buffer,line,index,(byteCount-1)*2 );
-						//printf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+						//kprintf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 						data = hex2int(buffer,tempBufferCount);
-            //printf("data %d\n", data);
+            //kprintf("data %d\n", data);
             index += (byteCount-1)*2;
             checksum += data;
 
 				//Checksum, two hex digits. Inverted LSB of the sum of values, including byte count, address and all data.
 				//readChecksum = (byte)Convert.ToInt32(line.Substring(index, 2), 16);
-        //printf("checksum %d\n",checksum );
+        //kprintf("checksum %d\n",checksum );
 				tempBufferCount = Substring(buffer,line,index,2);
-				//printf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				//kprintf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				readChecksum = hex2int(buffer,tempBufferCount);
-        // printf("readChecksum %d\n",readChecksum );
-        // printf("checksum %d\n",checksum );
-        //printf("checksum %d\r\n",checksum );
+        // kprintf("readChecksum %d\n",readChecksum );
+        // kprintf("checksum %d\n",checksum );
+        //kprintf("checksum %d\r\n",checksum );
         if (checksum > 255) {
           byteCheckSum = (byte)(checksum & 0xFF);
-          //printf("checksum %d\r\n",byteCheckSum );
+          //kprintf("checksum %d\r\n",byteCheckSum );
           byteCheckSum = ~byteCheckSum;
         }else{
           byteCheckSum = ~byteCheckSum;
           byteCheckSum = checksum;
         }
-        //printf("checksum %d\r\n",byteCheckSum );
+        //kprintf("checksum %d\r\n",byteCheckSum );
 				if (readChecksum != byteCheckSum){
-					printf("failed checksum\r\n" );
+					kprintf("failed checksum\r\n" );
 					return -1;
 				}
         return data;
@@ -740,8 +739,8 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
     index = 0;
     checksum = 0;
 
-				//printf("%s\r\n",line);
-        //printf("loop %d\n",linecount );
+				//kprintf("%s\r\n",line);
+        //kprintf("loop %d\n",linecount );
 				//Start code, always 'S'
 				assert(line[index++] == 'S',"Expecting S");
 
@@ -780,18 +779,18 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 								break;
 
 						default:
-								printf("unknown record type");
+								kprintf("unknown record type");
 								return 0;
 				}
 				tempBufferCount = Substring(buffer,line,index,2);
-				//printf("record value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				//kprintf("record value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				byteCount = hex2int(buffer,tempBufferCount);
         index += 2;
         checksum += byteCount;
 
 				//byteCount = ((int)line[index++])*10 + ((int)line[index++]);
 				//int byteCount = Convert.ToInt32(line.Substring(index, 2), 16);
-				//printf("byteCount %d\r\n",byteCount);
+				//kprintf("byteCount %d\r\n",byteCount);
 
 
 
@@ -799,31 +798,31 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 				for (i = 0; i < addressLength; i++)
 				{
 						tempBufferCount = Substring(buffer,line,index+i*2,2);
-						//printf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+						//kprintf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 						checksum += hex2int(buffer,tempBufferCount);
 						//string ch = line.Substring(index + i * 2, 2);
 						//checksum += Convert.ToInt32(ch, 16);
 				}
         if (addressLength!=0) {
           tempBufferCount = Substring(buffer,line,index,addressLength*2);
-  				//printf("temp address value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+  				//kprintf("temp address value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
   				address = hex2int(buffer,tempBufferCount);
         }
 
 
 				//address = Convert.ToInt32(line.Substring(index, addressLength * 2), 16);
-        //printf("index %d\n",index );
+        //kprintf("index %d\n",index );
         index += addressLength * 2;
-        //printf("index %d\n",index );
+        //kprintf("index %d\n",index );
 				byteCount -= addressLength ;
-        //printf("byteCount %d\n",byteCount );
+        //kprintf("byteCount %d\n",byteCount );
 				//Data, a sequence of bytes.
 				//data.length = 255
 				assert(byteCount<255,"byteCount bigger than 255");
 				for (i = 0; i < byteCount-1; i++)
 				{
 						tempBufferCount = Substring(buffer,line,index,2);
-						//printf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+						//kprintf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 						data[i] = hex2int(buffer,tempBufferCount);
 						//data[i] = (byte)Convert.ToInt32(line.Substring(index, 2), 16);
 						index += 2;
@@ -834,23 +833,23 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 				//readChecksum = (byte)Convert.ToInt32(line.Substring(index, 2), 16);
 
 				tempBufferCount = Substring(buffer,line,index,2);
-				//printf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
+				//kprintf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				readChecksum = hex2int(buffer,tempBufferCount);
-        //printf("checksum %d\r\n",checksum );
+        //kprintf("checksum %d\r\n",checksum );
 				byteCheckSum = (byte)(checksum & 0xFF);
-        //printf("checksum %d\r\n",byteCheckSum );
+        //kprintf("checksum %d\r\n",byteCheckSum );
         byteCheckSum = ~byteCheckSum;
-        //printf("checksum %d\r\n",byteCheckSum );
+        //kprintf("checksum %d\r\n",byteCheckSum );
 				if (readChecksum != byteCheckSum){
-					printf("failed checksum\r\n" );
+					kprintf("failed checksum\r\n" );
 					return -1;
 				}
 
 				//Put in memory
 				assert((byteCount-1) % 4 == 0, "Data should only contain full 32-bit words.");
-        //printf("recordType %d\n", recordType);
-        //printf("%lu\n",(size_t)data[0] );
-        //printf("byteCount %d\n",byteCount );
+        //kprintf("recordType %d\n", recordType);
+        //kprintf("%lu\n",(size_t)data[0] );
+        //kprintf("byteCount %d\n",byteCount );
         switch (recordType)
 				{
 						case 3: //data intended to be stored in memory.
@@ -863,16 +862,16 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 
 												memVal <<= 8;
 												memVal |= data[j];
-                        	//printf("0x%08x\n",(unsigned int)memVal );
+                        	//kprintf("0x%08x\n",(unsigned int)memVal );
 										}
                     memValues[wordsLoaded] = memVal;
 										wordsLoaded++;
 
                     if (wordsLoaded > wordsLength) {
-                      printf("words exceed max length\n" );
+                      kprintf("words exceed max length\n" );
                       return -1;
                     }
-										//printf("0x%08x\n",(unsigned int)memVal );
+										//kprintf("0x%08x\n",(unsigned int)memVal );
 								}
 
 								break;
@@ -906,7 +905,7 @@ void init_proc() {
 	//Initialise queues
 	// proc_t arr[2];
 	// int size = (char*)&arr[1] - (char*)&arr[0];
-	// printf("sizeof proc_t %d\n",size );
+	// kprintf("sizeof proc_t %d\n",size );
 
 	for(i = 0; i < NUM_QUEUES; i++) {
 		ready_q[i][HEAD] = NULL;

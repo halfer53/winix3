@@ -6,12 +6,12 @@
 /**
  * Writes a character to serial port 1.
  **/
-int putc(const int c) {
-	//TODO: buffer output and print via system calls.
-	while(!(RexSp1->Stat & 2));
-	RexSp1->Tx = c;
-	return 0;
-}
+// int putc(const int c) {
+// 	//TODO: buffer output and print via system calls.
+// 	while(!(RexSp1->Stat & 2));
+// 	RexSp1->Tx = c;
+// 	return 0;
+// }
 
 /**
  * Writes a character to serial port 2.
@@ -26,11 +26,11 @@ int putc2(const int c) {
 /**
  * Reads a character from serial port 1.
  **/
-int getc() {
-	//TODO: user interrupt-driven I/O
-	while(!(RexSp1->Stat & 1));
-	return RexSp1->Rx;
-}
+// int getc() {
+// 	//TODO: user interrupt-driven I/O
+// 	while(!(RexSp1->Stat & 1));
+// 	return RexSp1->Rx;
+// }
 
 /**
  * Get a character from serial port 2

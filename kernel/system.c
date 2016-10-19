@@ -35,7 +35,7 @@ static void scan_memory() {
 		}
 
 		if(!(FREE_MEM_END & 0x1fff)) { //print '.' every 8k
-			putc('.');
+			kputc('.');
 		}
 	}
 
@@ -49,15 +49,15 @@ static void scan_memory() {
  **/
 void system_main() {
 	//Find Upper Memory Limit
-	printf("Scanning Memory");
+	kprintf("Scanning Memory");
 	scan_memory();
-	printf(" %d kWords Free\r\n", ((unsigned long)(FREE_MEM_END - FREE_MEM_BEGIN)) / 1024);
+	kprintf(" %d kWords Free\r\n", ((unsigned long)(FREE_MEM_END - FREE_MEM_BEGIN)) / 1024);
 
 	//Print Memory Map
-	printf("Text Segment: 0x%x - 0x%x\r\n", &TEXT_BEGIN, &TEXT_END);
-	printf("Data Segment: 0x%x - 0x%x\r\n", &DATA_BEGIN, &DATA_END);
-	printf("BSS Segment:  0x%x - 0x%x\r\n", &BSS_BEGIN, &BSS_END);
-	printf("Unallocated:  0x%x - 0x%x\r\n", FREE_MEM_BEGIN, FREE_MEM_END);
+	kprintf("Text Segment: 0x%x - 0x%x\r\n", &TEXT_BEGIN, &TEXT_END);
+	kprintf("Data Segment: 0x%x - 0x%x\r\n", &DATA_BEGIN, &DATA_END);
+	kprintf("BSS Segment:  0x%x - 0x%x\r\n", &BSS_BEGIN, &BSS_END);
+	kprintf("Unallocated:  0x%x - 0x%x\r\n", FREE_MEM_BEGIN, FREE_MEM_END);
 
 
 
@@ -75,13 +75,12 @@ void system_main() {
 		winix_receive(&m);
 		who = m.src;
 		p = &proc_table[who];
-		//putc2('a');
 		//Do the work
 		switch(m.type) {
-			//printf("who %d\n",who );
+			kprintf("received from %s, call id %d\n",p->name,m.type );
 			//Gets the system uptime.
 			case SYSCALL_GETC:
-				response = sys_getc();
+				response = kgetc();
 				m.i1 = response;
 				winix_send(who,&m);
 				break;
@@ -93,7 +92,7 @@ void system_main() {
 
 			//Exits the current process.
 			case SYSCALL_EXIT:
-				printf("\r\n[SYSTEM] Process \"%s (%d)\" exited with code %d\r\n", p->name, p->proc_index, m.i1);
+				kprintf("\r\n[SYSTEM] Process \"%s (%d)\" exited with code %d\r\n", p->name, p->proc_index, m.i1);
 				//TODO: keep process in zombie state until parent calls wait, so the exit value can be retrieved
 				end_process(p);
 				break;
@@ -131,12 +130,13 @@ void system_main() {
 				break;
 
 			case SYSCALL_PUTC:
-				sys_putc(m.i1);
+				kputc(m.i1);
+
 				break;
 
 			//System call number is unknown, or not yet implemented.
 			default:
-				printf("\r\n[SYSTEM] Process \"%s (%d)\" performed unknown system call %d\r\n", p->name, p->proc_index, m.type);
+				kprintf("\r\n[SYSTEM] Process \"%s (%d)\" performed unknown system call %d\r\n", p->name, p->proc_index, m.type);
 				end_process(p);
 				break;
 		}

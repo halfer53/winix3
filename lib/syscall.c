@@ -97,20 +97,22 @@ void holes_overview(){
 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 }
 
-// int getc(){
-// 	int response = 0;
-// 	message_t m;
-//
-// 	m.type = SYSCALL_GETC;
-// 	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-// 	return response;
-// }
-//
-// void putc(int i){
-// 	int response = 0;
-// 	message_t m;
-//
-// 	m.type = SYSCALL_PUTC;
-// 	m.i1 = i;
-// 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
-// }
+int getc(){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_GETC;
+	printf("get c %d\n",m.type );
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	return response;
+}
+
+void putc(int i){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_PUTC;
+	printf("putc syscall id %d, val %c\n",m.type,(char)i );
+	m.i1 = i;
+	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
+}

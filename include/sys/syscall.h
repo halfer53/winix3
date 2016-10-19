@@ -52,4 +52,7 @@ void *_malloc(unsigned long size);
 void _free(void *ptr_parameter);
 void hole_list_overview();
 
+int getc();
+void putc(int i);
+
 #endif

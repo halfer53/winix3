@@ -55,74 +55,74 @@ int isPrintable(int c) {
 }
 
 int testmalloc(int argc, char **argv){
-	size_t a = 0;
-	char b = 'a';
-	int c = 0;
-	long d = 0;
-	size_t *ap = NULL;
-  char *bp = NULL;
-	int *cp = NULL;
-	char **lines = NULL;
-	int n = 2;
-	char **prev_p = NULL;
-	char *prev_p_line[2] = {NULL,NULL};
-	int i = 0;
-
-	if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
-		printf("not enough space\n");
-		return 0;
-	}else{
-
-		prev_p = lines;
-	}
-
-	for ( i = 0; i < n; i++) {
-		if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
-			printf("not enough space\n");
-			return 0;
-		}
-		prev_p_line[i] = lines[i];
-
-	}
-
-
-	strcpy(lines[0],"a");
-	strcpy(lines[1],"ab");
-
-	// for ( i = 0; i < n; i++) {
-	// 	printf("line %d content %s\n",i,lines[i] );
+	// size_t a = 0;
+	// char b = 'a';
+	// int c = 0;
+	// long d = 0;
+	// size_t *ap = NULL;
+  // char *bp = NULL;
+	// int *cp = NULL;
+	// char **lines = NULL;
+	// int n = 2;
+	// char **prev_p = NULL;
+	// char *prev_p_line[2] = {NULL,NULL};
+	// int i = 0;
+	//
+	// if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
+	// 	printf("not enough space\n");
+	// 	return 0;
+	// }else{
+	//
+	// 	prev_p = lines;
 	// }
-
-	//holes_overview();
-	for ( i = 0; i < n; i++) {
-		free(lines[i]);
-		holes_overview();
-	}
-	free(lines);
-
-	holes_overview();
-	if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
-		printf("not enough space\n");
-		return 0;
-	}else{
-		if (prev_p != lines) {
-			printf("incorrect free, new addr at %x, old addr at %x\n",lines,prev_p );
-
-		}
-	}
-	holes_overview();
-	for ( i = 0; i < n; i++) {
-		if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
-			printf("not enough space\n");
-			return 0;
-		}
-		if (prev_p_line[i] != lines[i]) {
-			printf("incorrect free, new addr at %x, old addr at %x\n",lines[i],prev_p_line[i] );
-
-		}
-		holes_overview();
-
-	}
+	//
+	// for ( i = 0; i < n; i++) {
+	// 	if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
+	// 		printf("not enough space\n");
+	// 		return 0;
+	// 	}
+	// 	prev_p_line[i] = lines[i];
+	//
+	// }
+	//
+	//
+	// strcpy(lines[0],"a");
+	// strcpy(lines[1],"ab");
+	//
+	// // for ( i = 0; i < n; i++) {
+	// // 	printf("line %d content %s\n",i,lines[i] );
+	// // }
+	//
+	// //holes_overview();
+	// for ( i = 0; i < n; i++) {
+	// 	free(lines[i]);
+	// 	holes_overview();
+	// }
+	// free(lines);
+	//
+	// holes_overview();
+	// if ((lines = (char **)malloc(n*POINTER_SIZE)) == NULL) {
+	// 	printf("not enough space\n");
+	// 	return 0;
+	// }else{
+	// 	if (prev_p != lines) {
+	// 		printf("incorrect free, new addr at %x, old addr at %x\n",lines,prev_p );
+	//
+	// 	}
+	// }
+	// holes_overview();
+	// for ( i = 0; i < n; i++) {
+	// 	if ((lines[i] = (char *)malloc(CHAR_SIZE * 10)) == NULL) {
+	// 		printf("not enough space\n");
+	// 		return 0;
+	// 	}
+	// 	if (prev_p_line[i] != lines[i]) {
+	// 		printf("incorrect free, new addr at %x, old addr at %x\n",lines[i],prev_p_line[i] );
+	//
+	// 	}
+	// 	holes_overview();
+	//
+	// }
 	return 0;
 }
 
@@ -191,68 +191,68 @@ int generic(int argc, char **argv) {
 	return -1;
 }
 
-void shell_main() {
+void main() {
 	int i, j;
 	int argc;
 	char *c;
 	struct cmd *handler = NULL;
-
-	while(1) {
-		printf("WINIX> ");
-
-		//Read line from terminal
-		for(i = 0; i < BUF_LEN - 1; i++) {
-			buf[i] = getc(); 	//read
-			//printf2("%d\n",(int)buf[i] );
-			if(buf[i] == '\r') { //test for end
-				break;
-			}
-			if ((int)buf[i] == 8) { //backspace
-
-				if (i != 0) {
-					putc(buf[i]);
-					i--;
-				}
-				i--;
-				continue;
-			}
-
-			putc(buf[i]); 		//echo
-		}
-		buf[++i] = '\0';
-		printf("\r\n" );
-
-		//Tokenise command
-		//TODO: proper parsing of arguments
-		argc = 0;
-		c = buf;
-		while(*c) {
-
-			//Skip over non-alphanumeric characters
-			while(*c && !isPrintable(*c))
-				c++;
-
-			//Add new token
-			if(*c != '\0') {
-				tokens[argc++] = c;
-			}
-
-			//Skip over alphanumeric characters
-			while(*c && isPrintable(*c))
-				c++;
-
-			if(*c != '\0') {
-				*c++ = '\0';
-			}
-		}
-
-		//Decode command
-		handler = commands;
-		while(handler->name != NULL && strcmp(tokens[0], handler->name)) {
-			handler++;
-		}
-
-		//Run it
-		handler->handle(argc, tokens);
-	}
+	printf("WINIX> ");
+	// while(1) {
+	// 	printf("WINIX> ");
+	//
+	// 	//Read line from terminal
+	// 	for(i = 0; i < BUF_LEN - 1; i++) {
+	// 		buf[i] = getc(); 	//read
+	// 		//printf2("%d\n",(int)buf[i] );
+	// 		if(buf[i] == '\r') { //test for end
+	// 			break;
+	// 		}
+	// 		if ((int)buf[i] == 8) { //backspace
+	//
+	// 			if (i != 0) {
+	// 				putc(buf[i]);
+	// 				i--;
+	// 			}
+	// 			i--;
+	// 			continue;
+	// 		}
+	//
+	// 		putc(buf[i]); 		//echo
+	// 	}
+	// 	buf[++i] = '\0';
+	// 	printf("\r\n" );
+	//
+	// 	//Tokenise command
+	// 	//TODO: proper parsing of arguments
+	// 	argc = 0;
+	// 	c = buf;
+	// 	while(*c) {
+	//
+	// 		//Skip over non-alphanumeric characters
+	// 		while(*c && !isPrintable(*c))
+	// 			c++;
+	//
+	// 		//Add new token
+	// 		if(*c != '\0') {
+	// 			tokens[argc++] = c;
+	// 		}
+	//
+	// 		//Skip over alphanumeric characters
+	// 		while(*c && isPrintable(*c))
+	// 			c++;
+	//
+	// 		if(*c != '\0') {
+	// 			*c++ = '\0';
+	// 		}
+	// 	}
+	//
+	// 	//Decode command
+	// 	handler = commands;
+	// 	while(handler->name != NULL && strcmp(tokens[0], handler->name)) {
+	// 		handler++;
+	// 	}
+	//
+	// 	//Run it
+	// 	handler->handle(argc, tokens);
+	// }
 }

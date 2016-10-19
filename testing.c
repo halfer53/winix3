@@ -17,17 +17,17 @@ int main(int argc, char const *argv[]) {
     size_t len = 0;
     ssize_t read;
 
-    fp = fopen("winix.srec", "r");
+    fp = fopen("shell.srec", "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
     if ((read = getline(&line, &len, fp)) != -1) {
       if (length = exec_phase1_readLength(line,5)) {
-        printf(" length %d\n",length );
+        //printf(" length %d\n",length );
         if ((read = getline(&line, &len, fp)) != -1) {
           if (wordslength = exec_phase1_readLength(line,6)) {
             success = 1;
             length -= 2;
-            printf("wordslength %d\n",wordslength );
+            //printf("wordslength %d\n",wordslength );
           }
         }
       }
@@ -56,9 +56,7 @@ int main(int argc, char const *argv[]) {
           counter++;
       }
     }
-    for ( i = 0; i < length; i++) {
-      printf("%s\n", lines[i] );
-    }
+
 
 
     fclose(fp);
@@ -131,7 +129,7 @@ int exec_phase1_readLength(char *line, int requiredType){
 
         index = 0;
         checksum = 0;
-        printf("%s\n",line );
+        //printf("%s\n",line );
 				//printf("%s\r\n",line);
         //printf("loop %d\n",linecount );
 				//Start code, always 'S'
@@ -371,7 +369,7 @@ int exec_phase2(char **lines,int length,int wordsLength){
 
 						case 7: //entry point for the program.
 								// CPU.PC = (uint)address;
-                printf("addr 0x%08x\n", (unsigned int)address);
+                printf("\naddr 0x%08x\n", (unsigned int)address);
 								break;
 				}
         if (linecount >= length) {
