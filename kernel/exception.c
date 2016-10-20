@@ -121,16 +121,18 @@ static void syscall_handler() {
 	proc_t *p;
 	size_t *sp;
 
-	//TODO: the following does not account for virtual memory offsets.
 	//cast two variables to to size_t to allow addition of two pointer, and then cast back to pointer
-	sp = (size_t *)((size_t)(current_proc->sp) + (size_t)(current_proc->rbase));
-
-	//printProceInfo(current_proc);
-
+	if (current_proc->rbase != 0) {
+		sp = (size_t *)((size_t)(current_proc->sp) + (size_t)(current_proc->rbase));
+	}else{
+		sp = current_proc->sp;
+	}
 
 	operation = *(sp);				//Operation is the first parameter on the stack
 	dest = *(sp+1);				//Destination is second parameter on the stack
+	kprintf("Exception sp %x, ori sp %x,rbase %x, operation %d, dest %d curr %d\n",sp,current_proc->sp,current_proc->rbase,*(sp),*(sp+1),current_proc->proc_index );
 	m = *(message_t **)(sp+ 2);	//Message pointer is the third parameter on the stack
+	kprintf("message i1 %d type %d\n",m->i1,m->type);
 	m->src = current_proc->proc_index;			//Don't trust the caller to specify their own source process number
 	retval = (int*)&current_proc->regs[0];		//Result is returned in register $1
 	//kprintf(" sp %x, operation %d, dest %d\n",sp,operation,dest );

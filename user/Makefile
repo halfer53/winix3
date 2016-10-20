@@ -1,6 +1,6 @@
 sources = parallel_task.c
 compile = parallel_task.s
-assemble = parallel_task.o
+assemble = parallel_task.o 
 
 all: $(assemble)
 

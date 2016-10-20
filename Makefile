@@ -5,13 +5,13 @@ all:
 	$(MAKE) -C lib
 	$(MAKE) -C user
 	wlink -o winix.srec kernel/util/limits_head.o $(objs) kernel/util/limits_tail.o
-	
+
 clean:
 	$(MAKE) -C kernel clean
 	$(MAKE) -C lib clean
 	$(MAKE) -C user clean
 	rm winix.srec
-	
+
 stat:
 	@echo "C Lines: "
 	@find . -name "*.c" -exec cat {} \; | wc -l
@@ -28,8 +28,8 @@ shell:
 	rm shell.c
 	rm shell.o
 	rm shell.s
-	gcc testing.c -o testing
-	./testing > shell.bin.txt
-	
-	
+	gcc gen_bin_code.c -o gen_bin_code
+	./gen_bin_code > include/exec_codes.c
+	rm shell.srec
+
 .DELETE_ON_ERROR:

@@ -436,6 +436,7 @@ char* getStateName(proc_state_t state){
 void sched() {
 	if(current_proc != NULL && !current_proc->flags) {
 		//Accounting
+		//kprintf("sched before %s(%d),pc %x, rbase %x, sp %x\n",current_proc->name,current_proc->proc_index,current_proc->rbase,current_proc->sp );
 		current_proc->time_used++;
 
 		//If there's still time left, reduce timeslice and add it to the head of its priority queue
@@ -450,7 +451,8 @@ void sched() {
 	//Get the next task
 	current_proc = pick_proc();
 	assert(current_proc != NULL, "sched: current_proc null");
-
+	// kprintf("sched next %s(%d),pc %x, rbase %x, sp %x\n",current_proc->name,current_proc->proc_index,current_proc->pc,current_proc->rbase,current_proc->sp );
+	// process_overview();
 	//Reset quantum if needed
 	if(current_proc->ticks_left == 0) {
 		current_proc->ticks_left = current_proc->quantum;

@@ -102,9 +102,9 @@ int getc(){
 	message_t m;
 
 	m.type = SYSCALL_GETC;
-	printf("get c %d\n",m.type );
+	//printf("get c %d\n",m.type );
 	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-	return response;
+	return m.i1;
 }
 
 void putc(int i){
@@ -112,7 +112,8 @@ void putc(int i){
 	message_t m;
 
 	m.type = SYSCALL_PUTC;
-	printf("putc syscall id %d, val %c\n",m.type,(char)i );
+	//printf("putc syscall id %d, val %c\n",m.type,(char)i );
 	m.i1 = i;
-	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	return;
 }

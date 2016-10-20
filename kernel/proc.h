@@ -20,7 +20,7 @@
 //Process Defaults
 #define DEFAULT_FLAGS			0
 #define PROTECTION_TABLE_LEN	32
-#define DEFAULT_STACK_SIZE		200
+#define DEFAULT_STACK_SIZE		1024
 #define DEFAULT_CCTRL			0xff9
 #define USER_CCTRL			0x8 //OKU is set to 0
 #define DEFAULT_RBASE			0x00000

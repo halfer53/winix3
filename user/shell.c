@@ -196,7 +196,9 @@ void main() {
 	int argc;
 	char *c;
 	struct cmd *handler = NULL;
-	printf("WINIX> ");
+	printf("W");
+	while(1);
+	sys_exit(0);
 	// while(1) {
 	// 	printf("WINIX> ");
 	//

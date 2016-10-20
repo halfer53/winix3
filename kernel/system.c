@@ -75,9 +75,10 @@ void system_main() {
 		winix_receive(&m);
 		who = m.src;
 		p = &proc_table[who];
+		kprintf("received from %s, call id %d, operation %d\n",p->name,p->proc_index,m.type );
 		//Do the work
 		switch(m.type) {
-			kprintf("received from %s, call id %d\n",p->name,m.type );
+
 			//Gets the system uptime.
 			case SYSCALL_GETC:
 				response = kgetc();
@@ -130,8 +131,9 @@ void system_main() {
 				break;
 
 			case SYSCALL_PUTC:
+				
 				kputc(m.i1);
-
+				winix_send(who,&m);
 				break;
 
 			//System call number is unknown, or not yet implemented.
