@@ -75,7 +75,7 @@ void system_main() {
 		winix_receive(&m);
 		who = m.src;
 		p = &proc_table[who];
-		kprintf("received from %s, call id %d, operation %d\n",p->name,p->proc_index,m.type );
+		//kprintf("received from %s, call id %d, operation %d\n",p->name,p->proc_index,m.type );
 		//Do the work
 		switch(m.type) {
 
@@ -117,13 +117,13 @@ void system_main() {
 				break;
 
 			case SYSCALL_MALLOC:
-				sptr = (size_t *)_malloc(m.s1);
+				sptr = (size_t *)sys_malloc(m.s1);
 				m.p1 = sptr;
 				winix_send(who, &m);
 				break;
 
 			case SYSCALL_FREE:
-				_free(m.p1);
+				sys_free(m.p1);
 				break;
 
 			case SYSCALL_HOLE_OVERVIEW:
@@ -131,9 +131,9 @@ void system_main() {
 				break;
 
 			case SYSCALL_PUTC:
-				
+
 				kputc(m.i1);
-				winix_send(who,&m);
+				//winix_send(who,&m);
 				break;
 
 			//System call number is unknown, or not yet implemented.

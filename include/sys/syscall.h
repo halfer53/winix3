@@ -48,8 +48,8 @@ int sys_exec(char* lines[],int length);
 
 void *sbrk(unsigned long size);
 
-void *_malloc(unsigned long size);
-void _free(void *ptr_parameter);
+void *sys_malloc(unsigned long size);
+void sys_free(void *ptr_parameter);
 void hole_list_overview();
 
 int getc();

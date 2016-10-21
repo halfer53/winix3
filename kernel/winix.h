@@ -22,6 +22,7 @@
 #include "system.h"
 #include "idle.h"
 #include "sys_memory.h"
+#include "exec.h"
 
 //Major and minor version numbers for WINIX.
 #define MAJOR_VERSION 1

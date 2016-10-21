@@ -114,6 +114,6 @@ void putc(int i){
 	m.type = SYSCALL_PUTC;
 	//printf("putc syscall id %d, val %c\n",m.type,(char)i );
 	m.i1 = i;
-	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 	return;
 }

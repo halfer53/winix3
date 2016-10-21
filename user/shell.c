@@ -196,65 +196,63 @@ void main() {
 	int argc;
 	char *c;
 	struct cmd *handler = NULL;
-	printf("W");
-	while(1);
+	while(1) {
+		printf("WINIX> ");
+
+		//Read line from terminal
+		for(i = 0; i < BUF_LEN - 1; i++) {
+			buf[i] = getc(); 	//read
+			//printf2("%d\n",(int)buf[i] );
+			if(buf[i] == '\r') { //test for end
+				break;
+			}
+			if ((int)buf[i] == 8) { //backspace
+
+				if (i != 0) {
+					putc(buf[i]);
+					i--;
+				}
+				i--;
+				continue;
+			}
+
+			putc(buf[i]); 		//echo
+		}
+		buf[++i] = '\0';
+		printf("\r\n" );
+
+		//Tokenise command
+		//TODO: proper parsing of arguments
+		argc = 0;
+		c = buf;
+		while(*c) {
+
+			//Skip over non-alphanumeric characters
+			while(*c && !isPrintable(*c))
+				c++;
+
+			//Add new token
+			if(*c != '\0') {
+				tokens[argc++] = c;
+			}
+
+			//Skip over alphanumeric characters
+			while(*c && isPrintable(*c))
+				c++;
+
+			if(*c != '\0') {
+				*c++ = '\0';
+			}
+		}
+
+		//Decode command
+		handler = commands;
+		while(handler->name != NULL && strcmp(tokens[0], handler->name)) {
+			handler++;
+		}
+
+		//Run it
+		handler->handle(argc, tokens);
+	}
 	sys_exit(0);
-	// while(1) {
-	// 	printf("WINIX> ");
-	//
-	// 	//Read line from terminal
-	// 	for(i = 0; i < BUF_LEN - 1; i++) {
-	// 		buf[i] = getc(); 	//read
-	// 		//printf2("%d\n",(int)buf[i] );
-	// 		if(buf[i] == '\r') { //test for end
-	// 			break;
-	// 		}
-	// 		if ((int)buf[i] == 8) { //backspace
-	//
-	// 			if (i != 0) {
-	// 				putc(buf[i]);
-	// 				i--;
-	// 			}
-	// 			i--;
-	// 			continue;
-	// 		}
-	//
-	// 		putc(buf[i]); 		//echo
-	// 	}
-	// 	buf[++i] = '\0';
-	// 	printf("\r\n" );
-	//
-	// 	//Tokenise command
-	// 	//TODO: proper parsing of arguments
-	// 	argc = 0;
-	// 	c = buf;
-	// 	while(*c) {
-	//
-	// 		//Skip over non-alphanumeric characters
-	// 		while(*c && !isPrintable(*c))
-	// 			c++;
-	//
-	// 		//Add new token
-	// 		if(*c != '\0') {
-	// 			tokens[argc++] = c;
-	// 		}
-	//
-	// 		//Skip over alphanumeric characters
-	// 		while(*c && isPrintable(*c))
-	// 			c++;
-	//
-	// 		if(*c != '\0') {
-	// 			*c++ = '\0';
-	// 		}
-	// 	}
-	//
-	// 	//Decode command
-	// 	handler = commands;
-	// 	while(handler->name != NULL && strcmp(tokens[0], handler->name)) {
-	// 		handler++;
-	// 	}
-	//
-	// 	//Run it
-	// 	handler->handle(argc, tokens);
-	// }
 }

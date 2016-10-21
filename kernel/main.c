@@ -72,20 +72,24 @@ void main() {
 	assert(p != NULL, "Create idle task");
 
 
-	p = exec_proc(init_code,2,0, USER_PRIORITY,"init");
+	p = exec_new_proc(init_code,2,0, USER_PRIORITY,"init");
 	p->quantum = 1;
-
+	kprintf("after init");
+	hole_list_overview();
 	//kprintf("fork init");
 	pid = fork_proc(p);
-
+	p = get_proc(pid);
+	kprintf("after fork");
+	hole_list_overview();
 	// p = new_proc(shell_main, USER_PRIORITY, "Shell");
 	// assert(p != NULL, "Create Shell task");
 	// p->quantum = 4;
-
-	p = exec_proc(shell_code,shell_code_length,shell_pc, USER_PRIORITY,"Shell2");
+	//TODO exec proc
+	p = exec_replace_existing_proc(p,shell_code,shell_code_length,shell_pc, USER_PRIORITY,"Shell");
 	assert(p != NULL, "Create Shell task");
 	p->quantum = 4;
-
+	kprintf("after exec");
+	hole_list_overview();
 
 	//Rocks game
 	/*p = new_proc(rocks_main, USER_PRIORITY, "Rocks");
