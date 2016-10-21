@@ -13,26 +13,15 @@ public class reformat_srec{
   public reformat_srec(){
 
   }
+  public String content = "";
   public void start(String filename){
     try{
-    returnWordsAndLines rwl = new returnWordsAndLines(0,0,"");
-     rwl = LoadSrec(filename);
-     long recordCount = rwl.linesCount;
-     long wordsCount = rwl.wordsCount;
-     String content = rwl.content;
+      long wordsCount = 0;
+     wordsCount = LoadSrec(filename);
+     System.out.println("words loaded "+wordsCount);
      String newcontent = "";
-
-     recordCount+=2;
-     String recordCountdata = Long.toHexString(recordCount).toUpperCase();
-     //System.out.println(wordsCount);
-     recordCountdata = AddZeroToFrontToFormPairsMin4(recordCountdata);
-
-     int byteCount = recordCountdata.length() /2 +1;//+1add the checksum value to byteCount;
-
-     int checksum = byteCount + (int)Long.parseLong(recordCountdata,16);
-
-     newcontent += ("S5" + AddZeroToFrontToFormPairs(byteCount) + recordCountdata + AddZeroToFrontToFormPairs(checksum)) + "\n";
-
+     int byteCount = 0;
+     int checksum = 0;
      String wordsCountdata = Long.toHexString(wordsCount).toUpperCase();
 
      //System.out.println(wordsCountdata);
@@ -59,7 +48,6 @@ public class reformat_srec{
      byte[] mybytes2 = content.getBytes();
      fos.write(mybytes2);
      fos.close();
-
 
 
    }catch (Exception e){
@@ -89,31 +77,21 @@ public class reformat_srec{
     //convert it to hex string
     return s;
   }
-  class returnWordsAndLines{
-    public long wordsCount = 0;
-    public long linesCount = 0;
-    public String content = "";
-    public returnWordsAndLines(long wordsc, long linesC, String content){
-      wordsCount = wordsc;
-      linesCount = linesC;
-      this.content = content;
-    }
-  }
 
-  public returnWordsAndLines LoadSrec(String name) throws Exception
+  public long LoadSrec(String name) throws Exception
   {
           FileReader in = new FileReader(name);
           BufferedReader br = new BufferedReader(in);
             long wordsLoaded = 0;
             String line = "";
             long linesCount = 0;
-            String content = "";
+            StringBuilder sb = new StringBuilder();
             //Note: All hex values are big endian.
 
             //Read records
             while ((line = br.readLine()) != null)
             {
-                content += line + "\n";
+                sb.append(line + "\n");
                 char linec[] = line.toCharArray();
                 linesCount++;
                 int index = 0;
@@ -215,12 +193,13 @@ public class reformat_srec{
 
                     case 7: //entry point for the program.
                         // CPU.PC = (long)address;
-                        System.out.println(address);
+                        System.out.println("pc "+address);
                         break;
                 }
             }
             br.close();
-            return new returnWordsAndLines(wordsLoaded,linesCount,content);
+            content = sb.toString();
+            return wordsLoaded;
         }
 
 

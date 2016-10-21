@@ -28,6 +28,7 @@ typedef struct {
 #define WINIX_SEND		0x13370001
 #define WINIX_RECEIVE	0x13370002
 #define WINIX_SENDREC	0x13370003
+#define WINIX_SENDONCE	0x13370004
 
 /**
  * Boot Image Task Numbers
@@ -39,6 +40,7 @@ typedef struct {
  * Sends a message to the destination process
  **/
 int winix_send(int dest, message_t *m);
+int winix_sendonce(int dest, message_t *m);
 
 /**
  * Receives a message.

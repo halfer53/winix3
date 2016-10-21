@@ -127,8 +127,9 @@ int testmalloc(int argc, char **argv){
 }
 
 int shell_exec(int argc, char **argv){
+	printf("please drag the srec file onto this windows\n" );
 
-	return 0;
+	return exec();
 }
 int shell_fork(int argc, char **argv){
 	int forkid = 0;
@@ -187,7 +188,7 @@ int generic(int argc, char **argv) {
 
 	//TODO: fork/exec program at argv[0]
 
-	printf("Unknown command '%s'\r\n", argv[0]);
+	//printf("Unknown command '%s'\r\n", argv[0]);
 	return -1;
 }
 

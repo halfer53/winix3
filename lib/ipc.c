@@ -33,6 +33,10 @@ int winix_receive(message_t *m) {
 	return wramp_syscall(WINIX_RECEIVE, NULL, m);
 }
 
+int winix_sendonce(int dest, message_t *m) {
+	return wramp_syscall(WINIX_SENDONCE, NULL, m);
+}
+
 /**
  * Sends and receives a message to/from the destination process.
  *

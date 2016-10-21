@@ -11,61 +11,40 @@ int main(int argc, char const *argv[]) {
   char **lines = NULL;
   int success = 0;
   int counter = 0;
+  size_t *memory_values;
+  size_t wordsLoaded = 0;
 
   FILE * fp;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
 
-    fp = fopen("shell.srec", "r");
+    fp = fopen("testprog.srec", "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
+    printf("size_t shell_code[] = {\n" );
     if ((read = getline(&line, &len, fp)) != -1) {
-      if (length = exec_phase1_readLength(line,5)) {
-        //printf(" length %d\n",length );
-        if ((read = getline(&line, &len, fp)) != -1) {
-          if (wordslength = exec_phase1_readLength(line,6)) {
-            success = 1;
-            length -= 2;
-            //printf("wordslength %d\n",wordslength );
+      if (wordslength = winix_load_srec_words_length(line,6)) {
+        if (memory_values = (size_t *)malloc(wordslength * sizeof(size_t))) {
+
+          while ((read = getline(&line, &len, fp)) != -1) {
+            if (line[1] == '7') {
+              temp = wordsLoaded;
+              if (winix_load_srec_mem_val(line,memory_values,wordsLoaded,wordslength)) {
+                continue;
+              }
+              if (temp != wordsLoaded) {
+                return 0;
+              }
+              break;
+            }else{
+              wordsLoaded += winix_load_srec_mem_val(line,memory_values,wordsLoaded,wordslength);
+            }
           }
         }
       }
     }
-    if (success == 1) {
-      if (lines = (char **)malloc(length * sizeof(char *))) {
-          for ( i = 0; i < length; i++) {
-            if (lines[i] = (char *)malloc(128 * sizeof(char))) {
-              success = 2;
-            }else{
-              success = 0;
-            }
-          }
-      }else{
-        success = 0;
-      }
-    }
-    if (success == 2) {
-      while ((read = getline(&line, &len, fp)) != -1) {
-          if (len < 128) {
-            strcpy(lines[counter] ,line);
-          }else{
-            printf("line too big %d\n",(int)len );
-          }
 
-          counter++;
-      }
-    }
-
-
-
-    fclose(fp);
-    if (line)
-        free(line);
-  //first recordtype 5,and 6 is consumed
-
-  printf("size_t shell_code[] = {\n" );
-  i = exec_phase2(lines,length,wordslength);
   printf("int shell_code_length =  %d;\n", wordslength);
   printf("size_t init_code[2] = {0x01010000,0x50f00000};\n" );
   printf("size_t init_pc = 0x0;\n" );
@@ -112,7 +91,7 @@ int Substring(char* buffer,char* original,int start_index,int length){
 
 typedef unsigned char byte;
 
-int exec_phase1_readLength(char *line, int requiredType){
+int winix_load_srec_words_length(char *line){
   int i=0;
 
   int index = 0;
@@ -122,7 +101,6 @@ int exec_phase1_readLength(char *line, int requiredType){
 	int byteCount = 0;
 	char buffer[128];
 	char tempBufferCount = 0;
-
   int wordsCount = 0;
   int length = 0;
   int readChecksum = 0;
@@ -130,16 +108,14 @@ int exec_phase1_readLength(char *line, int requiredType){
 
         index = 0;
         checksum = 0;
-        //printf("%s\n",line );
-				//printf("%s\r\n",line);
         //printf("loop %d\n",linecount );
 				//Start code, always 'S'
-				assert(line[index++] == 'S',"Expecting S");
+        if (line[index++] != 'S') {
+          printf("Expection S\n");
+        }
 
 				recordType = line[index++] - '0';
-        if (recordType == requiredType) {
-
-        }else{
+        if (recordType != 6) {
           printf("recordType %d\n",recordType );
           printf("format is incorrect\n" );
           return 0;
@@ -149,9 +125,6 @@ int exec_phase1_readLength(char *line, int requiredType){
 				byteCount = hex2int(buffer,tempBufferCount);
         index += 2;
         checksum += byteCount;
-
-				assert(byteCount<255,"byteCount bigger than 255");
-
 						tempBufferCount = Substring(buffer,line,index,(byteCount-1)*2 );
 						//printf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 						data = hex2int(buffer,tempBufferCount);
@@ -165,8 +138,8 @@ int exec_phase1_readLength(char *line, int requiredType){
 				tempBufferCount = Substring(buffer,line,index,2);
 				//printf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				readChecksum = hex2int(buffer,tempBufferCount);
-         //printf("readChecksum %d\n",readChecksum );
-         //printf("checksum %d\n",checksum );
+        // printf("readChecksum %d\n",readChecksum );
+        // printf("checksum %d\n",checksum );
         //printf("checksum %d\r\n",checksum );
         if (checksum > 255) {
           byteCheckSum = (byte)(checksum & 0xFF);
@@ -181,19 +154,11 @@ int exec_phase1_readLength(char *line, int requiredType){
 					printf("failed checksum\r\n" );
 					return 0;
 				}
-
         return data;
 }
-//*(unsigned long*)FREE_MEM_BEGIN = (unsigned int)memVal;
-//FREE_MEM_BEGIN++;
-int exec_phase2(char **lines,int length,int wordsLength){
-  // char* lines[] = {"S32D000000008107300090073004120000003828000DB08FFFFB600000096000000E1220000140000003810730038F",
-	// 			"S32D0000000A91073002812000139107300350F000001901FFFF199A000219930001B09FFFFE50F0000000000076C3",
-	// 			"S32D000000140000007900000038000000380000003F00000000000000390000005B0000003F0000003F0000000084",
-	// 			"S30D0000001E0000000000000000D4",
-	// 			"S70500000000FA"};
-  char memValues[wordsLength];
-  int wordsCount = 0;
+
+
+int winix_load_srec_mem_val(char *line,size_t *memory_values,int start_index,int memvalLength){
 	int wordsLoaded = 0;
 	int index = 0;
 	int checksum = 0;
@@ -207,32 +172,16 @@ int exec_phase2(char **lines,int length,int wordsLength){
 	byte data[255];
 	int readChecksum = 0;
 	int datalength = 0;
-	unsigned long memVal = 0;
+	size_t memVal = 0;
   int i = 0;
   int j = 0;
-  int linecount = 0;
-
-	while(1){
-		//Read line from terminal
-		// for(i = 0; i < BUF_LEN - 1; i++) {
-		// 	buf[i] = getc(); 	//read
-    //
-		// 	if(buf[i] == '\r') { //test for end
-		// 		break;
-		// 	}
-		// 	putc(buf[i]); 		//echo
-		// }
-
-		char* line = lines[linecount];
-
-    linecount++;
-    index = 0;
-    checksum = 0;
 
 				//printf("%s\r\n",line);
         //printf("loop %d\n",linecount );
 				//Start code, always 'S'
-				assert(line[index++] == 'S',"Expecting S");
+        if (line[index++] != 'S') {
+          printf("Expection S\n");
+        }
 
 				//Record type, 1 digit, 0-9, defining the data field
 				//0: Vendor-specific data
@@ -269,7 +218,7 @@ int exec_phase2(char **lines,int length,int wordsLength){
 								break;
 
 						default:
-								printf("unknown record type");
+								printf("unknown record type\n");
 								return 0;
 				}
 				tempBufferCount = Substring(buffer,line,index,2);
@@ -308,7 +257,7 @@ int exec_phase2(char **lines,int length,int wordsLength){
         //printf("byteCount %d\n",byteCount );
 				//Data, a sequence of bytes.
 				//data.length = 255
-				assert(byteCount<255,"byteCount bigger than 255");
+
 				for (i = 0; i < byteCount-1; i++)
 				{
 						tempBufferCount = Substring(buffer,line,index,2);
@@ -332,13 +281,16 @@ int exec_phase2(char **lines,int length,int wordsLength){
         //printf("checksum %d\r\n",byteCheckSum );
 				if (readChecksum != byteCheckSum){
 					printf("failed checksum\r\n" );
-					return;
+					return 0;
 				}
 
 				//Put in memory
-				assert((byteCount-1) % 4 == 0, "Data should only contain full 32-bit words.");
+        if ((byteCount-1) % 4 != 0) {
+            printf("Data should only contain full 32-bit words.\n");
+        }
+
         //printf("recordType %d\n", recordType);
-        //printf("%lu\n",(unsigned long)data[0] );
+        //printf("%lu\n",(size_t)data[0] );
         //printf("byteCount %d\n",byteCount );
         switch (recordType)
 				{
@@ -352,32 +304,19 @@ int exec_phase2(char **lines,int length,int wordsLength){
 
 												memVal <<= 8;
 												memVal |= data[j];
-                        	//printf("0x%08x\n",(unsigned int)memVal );
 										}
-                    memValues[wordsLoaded] = memVal;
+
 										wordsLoaded++;
-
-                    if (wordsLoaded > wordsLength) {
-                      printf("words exceed max length\n" );
-                      return;
-                    }
+                    //memory_values[start_index + wordsLoaded] = memVal;
 										printf("0x%08x,",(unsigned int)memVal );
-                    //printf("%d,\n",(unsigned int)memVal );
 								}
-
 								break;
 
 
 						case 7: //entry point for the program.
-								// CPU.PC = (uint)address;
-                printf("\n};\nint shell_pc =  0x%08x;\n", (unsigned int)address);
-								break;
+            printf("\n};\nint shell_pc =  0x%08x;\n", (unsigned int)address);
+            break;
 				}
-        if (linecount >= length) {
-          break;
-        }
-		}
 
-		return wordsLoaded;
-
+		return 1;
 }

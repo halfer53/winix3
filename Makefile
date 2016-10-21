@@ -32,4 +32,14 @@ shell:
 	./gen_bin_code > include/exec_codes.c
 	rm shell.srec
 
+testprog:
+	cp user/testprog.c .
+	wcc -S testprog.c
+	wasm testprog.s
+	wlink -o testprog.srec testprog.o lib/stdio.o lib/syscall.o lib/ipc.o lib/wramp_syscall.o
+	java reformat_srec testprog.srec
+	rm testprog.c
+	rm testprog.o
+	rm testprog.s
+
 .DELETE_ON_ERROR:

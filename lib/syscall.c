@@ -47,15 +47,16 @@ int fork(){
 	message_t m;
 
 	m.type = SYSCALL_FORK;
-	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
-	return 0;
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+	printf("received %d\n",m.i1);
+	return m.i1;
 }
 
-int exec(char* lines[],int length){
+int exec(){
 	int response = 0;
 	message_t m;
 
-	m.type = SYSCALL_FORK;
+	m.type = SYSCALL_EXEC;
 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 	return 0;
 }

@@ -2,19 +2,19 @@
 
 proc_t *exec_new_proc(size_t *lines, size_t length, size_t entry, int priority, char *name){
 	proc_t *p = NULL;
-	if(p = getsys_free_proc()) {
+	if(p = get_free_proc()) {
 		p = exec_proc(p,lines,length,entry,priority,name);
 	}
-  assert(p != NULL,"Exec failed");
+  assert(p != NULL,"Exec failed\n");
   return p;
 }
 
 proc_t *exec_replace_existing_proc(proc_t *p,size_t *lines, size_t length, size_t entry, int priority, char *name){
-	assert(p != NULL, "can't exec null process");
-	sys_free(p->rbase);
+	assert(p != NULL, "can't exec null process\n");
+	proc_free(p->rbase);
 	proc_set_default(p);
 	p = exec_proc(p,lines,length,entry,priority,name);
-  assert(p != NULL,"Exec failed");
+  assert(p != NULL,"Exec failed\n");
   return p;
 }
 
@@ -23,11 +23,11 @@ static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, i
 	void *ptr_base = NULL;
 	int i = 0;
 
-	assert(p != NULL, "can't exec null process");
+	assert(p != NULL, "can't exec null process\n");
 
 		//it's best to malloc text segment and stack together, so they stick together, and it's easier to manage
-		ptr_base = sys_malloc(length + DEFAULT_STACK_SIZE);
-		assert(ptr_base != NULL,"memory is full");
+		ptr_base = proc_malloc(length + DEFAULT_STACK_SIZE);
+		assert(ptr_base != NULL,"memory is full\n");
 		memcpy(ptr_base, lines,length);
 
 		//p->sp = (size_t *)ptr_base + (size_t)DEFAULT_STACK_SIZE + length;
@@ -61,51 +61,121 @@ static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, i
 }
 
 
+#define BUF_LEN		100
 
-int winix_load_srec_data_length(char *line){
+int exec_read_srec(proc_t *p){
+  char buf[BUF_LEN];
+  size_t *memory_values = NULL;
+  int wordslength = 0;
+  int wordsLoaded = 0;
+  int temp = 0;
+  int i = 0;
+  size_t entry = 0;
+
+	fork_proc(p);
+
+  for(i = 0; i < BUF_LEN - 1; i++) {
+    buf[i] = kgetc(); 	//read
+		// temp = (int)buf[i];
+		// kprintf("%d ",temp);
+    if(buf[i] == '\n') { //test for end
+
+			buf[i+1] = '\0';
+      break;
+    }
+  }
+
+  if ((wordslength = winix_load_srec_words_length(buf))) {
+    memory_values = (size_t *)proc_malloc(wordslength * LONG_SIZE);
+    while(1){
+      for(i = 0; i < BUF_LEN - 1; i++) {
+        buf[i] = kgetc(); 	//read
+				// temp = (int)buf[i];
+				// kprintf("%d ",temp);
+        if(buf[i] == '\n') { //test for end
+					buf[i+1] = '\0';
+					break;
+        }
+      }
+      if (i >= BUF_LEN) {
+        kprintf("incorrect srec file format: line too big\n");
+        return 0;
+      }
+      if (buf[1] == '7') {
+        temp = wordsLoaded;
+        entry = winix_load_srec_mem_val(buf,memory_values,wordsLoaded,wordslength);
+				//kprintf("entry %x",entry);
+				if (temp != wordsLoaded) {
+          kprintf("wordsLoaded %d, previous wordsLoaded %d, last s7 is incorrect\n");
+          return 0;
+        }
+        break;
+      }else{
+				if ((temp = winix_load_srec_mem_val(buf,memory_values,wordsLoaded,wordslength))) {
+						wordsLoaded += temp;
+				}else{
+					kprintf("something went wrong\n");
+					return 0;
+				}
+
+      }
+      if (wordsLoaded > wordslength) {
+        kprintf("wordsLoaded %d exceed wordslength %d\n",wordsLoaded,wordslength);
+        return 0;
+      }
+      if (wordsLoaded % 100 == 0) {
+        kputc('.');
+      }
+
+    }
+    //kprintf("wordsLoaded %d wordslength %d\n",wordsLoaded,wordslength);
+    p = exec_replace_existing_proc(p,memory_values,wordslength,entry,SYSTEM_PRIORITY,p->name);
+		p->quantum = 10;
+
+    return 1;
+  }else{
+    return 0;
+  }
+}
+
+static int winix_load_srec_words_length(char *line){
   int i=0;
 
   int index = 0;
 	int checksum = 0;
-  byte byteCheckSum = 0;
+  byte_t byteCheckSum = 0;
 	int recordType = 0;
 	int byteCount = 0;
 	char buffer[128];
 	char tempBufferCount = 0;
-
   int wordsCount = 0;
   int length = 0;
-  int readChecksum = 0;
+  byte_t readChecksum = 0;
   int data = 0;
 
         index = 0;
         checksum = 0;
-
-				kprintf("%s\r\n",line);
         //kprintf("loop %d\n",linecount );
 				//Start code, always 'S'
-				assert(line[index++] == 'S',"Expecting S");
+				if (line[index++] != 'S') {
+          kprintf("Expect S, but input data is %d\n",line[index-1]);
+        }
 
 				recordType = line[index++] - '0';
-        if (recordType == 5 || recordType == 6) {
-
-        }else{
+        if (recordType != 6) {
           kprintf("recordType %d\n",recordType );
           kprintf("format is incorrect\n" );
-          return -1;
+          return 0;
         }
         tempBufferCount = Substring(buffer,line,index,2);
 				//kprintf("record value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 				byteCount = hex2int(buffer,tempBufferCount);
         index += 2;
         checksum += byteCount;
-
-				assert(byteCount<255,"byteCount bigger than 255");
-
 						tempBufferCount = Substring(buffer,line,index,(byteCount-1)*2 );
 						//kprintf("temp byte value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
 						data = hex2int(buffer,tempBufferCount);
-            //kprintf("data %d\n", data);
+            kprintf("data %d\n", data);
             index += (byteCount-1)*2;
             checksum += data;
 
@@ -114,31 +184,34 @@ int winix_load_srec_data_length(char *line){
         //kprintf("checksum %d\n",checksum );
 				tempBufferCount = Substring(buffer,line,index,2);
 				//kprintf("read checksum value %s, value in base 10: %d,length %d\r\n",buffer,hex2int(buffer,tempBufferCount),tempBufferCount);
-				readChecksum = hex2int(buffer,tempBufferCount);
-        // kprintf("readChecksum %d\n",readChecksum );
-        // kprintf("checksum %d\n",checksum );
-        //kprintf("checksum %d\r\n",checksum );
+				readChecksum = (byte_t)hex2int(buffer,tempBufferCount);
+        //kprintf("readChecksum %d\n",readChecksum & 0xffffffff);
+        //kprintf("readChecksum %d\n",readChecksum & 0x000000FF);
+      //  kprintf("checksum %d\n",checksum );
+
         if (checksum > 255) {
-          byteCheckSum = (byte)(checksum & 0xFF);
-          //kprintf("checksum %d\r\n",byteCheckSum );
+					byteCheckSum = (byte_t)(checksum & 0xffffffff);
+					//kprintf("checksum %d\n",byteCheckSum );
+          byteCheckSum = (byte_t)(checksum & 0x000000FF);
+					//kprintf("checksum %d\n",byteCheckSum );
           byteCheckSum = ~byteCheckSum;
+					//kprintf("checksum %d\n",byteCheckSum);
+					byteCheckSum &= 0x000000ff;
+					//kprintf("checksum %d\n",byteCheckSum);
         }else{
           byteCheckSum = ~byteCheckSum;
-          byteCheckSum = checksum;
         }
-        //kprintf("checksum %d\r\n",byteCheckSum );
+
 				if (readChecksum != byteCheckSum){
+					kprintf("checksum %d, readChecksum %d\r\n",byteCheckSum,readChecksum );
 					kprintf("failed checksum\r\n" );
-					return -1;
+					return 0;
 				}
         return data;
 }
 
 
-
-int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int wordsLength){
-	char memValues[1];
-  int wordsCount = 0;
+static size_t winix_load_srec_mem_val(char *line,size_t *memory_values,int start_index,int memvalLength){
 	int wordsLoaded = 0;
 	int index = 0;
 	int checksum = 0;
@@ -155,19 +228,14 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 	size_t memVal = 0;
   int i = 0;
   int j = 0;
-  int linecount = lines_start_index;
-
-	while(1){
-
-		char* line = lines[linecount];
-    linecount++;
-    index = 0;
-    checksum = 0;
 
 				//kprintf("%s\r\n",line);
         //kprintf("loop %d\n",linecount );
 				//Start code, always 'S'
-				assert(line[index++] == 'S',"Expecting S");
+        if (line[index++] != 'S') {
+          kprintf("Expect S, but input data is %d\n",line[index-1]);
+					return 0;
+        }
 
 				//Record type, 1 digit, 0-9, defining the data field
 				//0: Vendor-specific data
@@ -204,7 +272,7 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 								break;
 
 						default:
-								kprintf("unknown record type");
+								kprintf("unknown record type\n");
 								return 0;
 				}
 				tempBufferCount = Substring(buffer,line,index,2);
@@ -243,7 +311,7 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
         //kprintf("byteCount %d\n",byteCount );
 				//Data, a sequence of bytes.
 				//data.length = 255
-				assert(byteCount<255,"byteCount bigger than 255");
+
 				for (i = 0; i < byteCount-1; i++)
 				{
 						tempBufferCount = Substring(buffer,line,index,2);
@@ -264,14 +332,22 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 				byteCheckSum = (byte)(checksum & 0xFF);
         //kprintf("checksum %d\r\n",byteCheckSum );
         byteCheckSum = ~byteCheckSum;
+
+				byteCheckSum &= 0x000000ff;
         //kprintf("checksum %d\r\n",byteCheckSum );
 				if (readChecksum != byteCheckSum){
+					kprintf("checksum %d, readChecksum %d\r\n",byteCheckSum,readChecksum );
 					kprintf("failed checksum\r\n" );
-					return -1;
+					return 0;
 				}
 
 				//Put in memory
-				assert((byteCount-1) % 4 == 0, "Data should only contain full 32-bit words.");
+        if ((byteCount-1) % 4 != 0) {
+					kprintf("checksum %d, readChecksum %d\r\n",byteCheckSum,readChecksum );
+          kprintf("Data should only contain full 32-bit words.\n");
+					return 0;
+        }
+
         //kprintf("recordType %d\n", recordType);
         //kprintf("%lu\n",(size_t)data[0] );
         //kprintf("byteCount %d\n",byteCount );
@@ -287,29 +363,18 @@ int winix_load_srec_mem_val(char *(*lines), int length,int lines_start_index,int
 
 												memVal <<= 8;
 												memVal |= data[j];
-                        	//kprintf("0x%08x\n",(unsigned int)memVal );
 										}
-                    memValues[wordsLoaded] = memVal;
-										wordsLoaded++;
 
-                    if (wordsLoaded > wordsLength) {
-                      kprintf("words exceed max length\n" );
-                      return -1;
-                    }
+										wordsLoaded++;
+                    memory_values[start_index + wordsLoaded] = memVal;
 										//kprintf("0x%08x\n",(unsigned int)memVal );
 								}
-
 								break;
 
 
 						case 7: //entry point for the program.
-								// CPU.PC = (uint)address;
+								return (size_t)address;
 								break;
 				}
-        if (linecount >= length) {
-          break;
-        }
-		}
-
 		return wordsLoaded;
 }

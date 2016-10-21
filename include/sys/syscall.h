@@ -36,20 +36,16 @@ int sys_uptime();
  **/
 int sys_exit(int status);
 int sys_process_overview();
-int fork();
-int exec(char* lines[],int length);
-
 
 int sys_process_overview();
 
 int sys_fork();
 
-int sys_exec(char* lines[],int length);
+int sys_exec();
 
 void *sbrk(unsigned long size);
 
-void *sys_malloc(unsigned long size);
-void sys_free(void *ptr_parameter);
+void *proc_malloc(unsigned long size);
 void hole_list_overview();
 
 int getc();

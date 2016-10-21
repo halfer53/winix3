@@ -80,8 +80,8 @@ static hole_t *hole_dequeue(hole_t **q) {
 
 
 static int hole_delete(hole_t **q, hole_t *h){
-	hole_t *curr = q[HEAD];
-	hole_t *prev = NULL;
+	register hole_t *curr = q[HEAD];
+	register hole_t *prev = NULL;
 
 	if(curr == NULL) { //Empty list
 		assert(q[TAIL] == NULL, "delete: tail not null");
@@ -154,7 +154,7 @@ void *_sbrk(size_t size){
 
 
 
-void *sys_malloc(size_t size){
+void *proc_malloc(size_t size){
   register hole_t *prev = NULL;
 	register hole_t *h = unused_holes[HEAD];
   size_t *p_start_addr = NULL;
@@ -183,14 +183,14 @@ void *sys_malloc(size_t size){
 			h->length = size;
 			hole_enqueue_head(used_holes,h);
 		}
-		kprintf("malloc: curr hole start 0x%x, length %d\n",old_base,h->length );
+		//kprintf("malloc: curr hole start 0x%x, length %d\n",old_base,h->length );
 		return (void *)old_base;
   }else{
 		if ((p_start_addr = (size_t *)_sbrk(size)) != NULL) {
 			if (h = hole_dequeue(pending_holes)) {
 				h->start = p_start_addr;
 				h->length = size;
-				kprintf("malloc: sbrk start 0x%x, length %d\n",h->start,h->length );
+				//kprintf("malloc: sbrk start 0x%x, length %d\n",h->start,h->length );
 				hole_enqueue_head(used_holes,h);
 				return p_start_addr;
 			}
@@ -200,7 +200,7 @@ void *sys_malloc(size_t size){
 	return NULL;
 }
 
-void sys_free(void *ptr_parameter){
+void proc_free(void *ptr_parameter){
 	register size_t *p = (size_t *)ptr_parameter;
 	register hole_t *h = used_holes[HEAD];
 	int i = 0;
@@ -211,7 +211,7 @@ void sys_free(void *ptr_parameter){
 		h = h->next;
 	}
 	if (h != NULL) {
-		kprintf("free: found start 0x%x, length %d\n",h->start,h->length );
+		//kprintf("free: found start 0x%x, length %d\n",h->start,h->length );
 		for ( i = 0; i < h->length; i++) {
 			*p = DEFAULT_MEM_VALUE;
 			p++;
@@ -219,12 +219,12 @@ void sys_free(void *ptr_parameter){
 
 		if (hole_delete(used_holes, h)) {
 			if (merge_holes(unused_holes,h)) {
-				kprintf("holes merged\n" );
+				//kprintf("holes merged\n" );
 			}
 		}
 
 	}else{
-		kprintf("nothing found to be freed at addr %x\n",ptr_parameter );
+		//kprintf("nothing found to be freed at addr %x\n",ptr_parameter );
 	}
 }
 
@@ -241,15 +241,15 @@ int merge_holes(hole_t **merging_holes_list,hole_t *h){
 		}
 		while(curr != NULL){
 			if (curr->start + curr->length == h->start) {
-				kprintf("before start 0x%x, length %d start 0x%x, length %d\n",h->start,h->length,curr->start,curr->length);
+				//kprintf("before start 0x%x, length %d start 0x%x, length %d\n",h->start,h->length,curr->start,curr->length);
 				curr->length += h->length;
-				kprintf("merged hole, start 0x%x, length %d\n",curr->start,curr->length);
+				//kprintf("merged hole, start 0x%x, length %d\n",curr->start,curr->length);
 				break;
 			}else if(h->start + h->length == curr->start){
-				kprintf("before start 0x%x, length %d start 0x%x, length %d\n",h->start,h->length,curr->start,curr->length);
+				//kprintf("before start 0x%x, length %d start 0x%x, length %d\n",h->start,h->length,curr->start,curr->length);
 				curr->start -= h->length;
 				curr->length += h->length;
-				kprintf("merged hole, start 0x%x, length %d\n",curr->start,curr->length);
+				//kprintf("merged hole, start 0x%x, length %d\n",curr->start,curr->length);
 				break;
 			}
 			curr = curr->next;
@@ -259,7 +259,7 @@ int merge_holes(hole_t **merging_holes_list,hole_t *h){
 		hole_enqueue_head(pending_holes,h);
 		return 1;
 	}else{
-		hole_enqueue_head(used_holes,h);
+		hole_enqueue_head(unused_holes,h);
 		return 0;
 	}
 }

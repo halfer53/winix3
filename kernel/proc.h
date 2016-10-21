@@ -35,6 +35,7 @@
 //Process Flags
 #define SENDING					0x0001
 #define RECEIVING				0x0002
+#define REJECT				0x0003
 
 /**
  * State of a process.
@@ -83,6 +84,8 @@ typedef struct proc {
 	int proc_index;		//Index in the process table
 
 	unsigned long length;
+
+	int parent_proc_index;
 } proc_t;
 
 extern proc_t proc_table[NUM_PROCS];
@@ -96,7 +99,7 @@ void proc_set_default(proc_t *p);
  * Creates a new process and adds it to the runnable queue.
  **/
 proc_t *new_proc(void (*entry)(), int priority, const char *name);
-proc_t *getsys_free_proc();
+proc_t *get_free_proc();
 void add_to_scheduling_queue(proc_t* p);
 /**
  * WINIX Scheduler.
@@ -121,7 +124,7 @@ void end_process(proc_t *p);
  **/
 proc_t *get_proc(int proc_nr);
 
-//void *psys_malloc(size_t size);
+//void *pproc_malloc(size_t size);
 
 
 //fork the next process in the ready_q, return the new proc_index of the forked process
@@ -146,6 +149,7 @@ char* getStateName(proc_state_t state);
  *   -1 if destination is invalid
  **/
 int wini_send(int dest, message_t *m);
+int wini_sendonce(int dest, message_t *m);
 
 /**
  * Receives a message.

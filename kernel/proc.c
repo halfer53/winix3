@@ -126,7 +126,7 @@ void add_to_scheduling_queue(proc_t* p){
 	enqueue_tail(ready_q[p->priority], p);
 }
 
-proc_t *getsys_free_proc() {
+proc_t *get_free_proc() {
 	int i;
 	proc_t *p = dequeue(free_proc);
 	size_t *sp = NULL;
@@ -156,7 +156,7 @@ void proc_set_default(proc_t *p){
 	p->quantum = DEFAULT_QUANTUM;
 	p->ticks_left = 0;
 	p->time_used = 0;
-	strcpy(p->name,"Unkonwn Name");
+	//strcpy(p->name,"Unkonwn Name");
 	p->state = INITIALISING;
 	p->flags = DEFAULT_FLAGS;
 
@@ -165,6 +165,7 @@ void proc_set_default(proc_t *p){
 	p->message = NULL;
 
 	p->length = 0;
+	p->parent_proc_index = 0;
 
 	//data not initialised
 	//unsigned long protection_table[PROTECTION_TABLE_LEN]
@@ -218,10 +219,9 @@ int fork_proc(proc_t *original){
 		return -1;
 	}
 
-
-	if(p = getsys_free_proc()) {
+	if(p = get_free_proc()) {
 		//it's best to malloc text segment and stack together, so they stick together, and it's easier to manage
-		ptr_base = sys_malloc(original->length + DEFAULT_STACK_SIZE);
+		ptr_base = proc_malloc(original->length + DEFAULT_STACK_SIZE);
 		assert(ptr_base != NULL,"memory is full");
 		memcpy(ptr_base,original->rbase,original->length + DEFAULT_STACK_SIZE);
 
@@ -234,6 +234,7 @@ int fork_proc(proc_t *original){
 		}
 		p->priority = original->priority;
 		p->pc = original->pc; //PC should be the same if virtual address is taken into account
+		kprintf("%d's pc at %x\n",p->proc_index,(size_t)p->pc+(size_t)p->rbase);
 		p->ra = original->ra;
 		p->rbase = ptr_base;
 		p->cctrl = original->cctrl;
@@ -265,14 +266,13 @@ int fork_proc(proc_t *original){
 		p->flags = original->flags;
 
 		p->length = original->length;
-		//process_overview();
-		//kprintf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+
+		p->parent_proc_index = original->proc_index;
+
 		enqueue_tail(ready_q[priority], p);
-		//kprintf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
-		//process_overview();
 	}
 	assert(p != NULL, "Fork");
-
+	kprintf("new proc %d parent %d\n",p->proc_index,p->parent_proc_index);
 	return p->proc_index;
 }
 
@@ -302,7 +302,7 @@ proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 	}
 
 	//Get a free slot in the process table
-	if(p = getsys_free_proc()) {
+	if(p = get_free_proc()) {
 		p->priority = priority;
 		p->pc = entry;
 
@@ -322,6 +322,7 @@ proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 		p->state = RUNNABLE;
 		enqueue_tail(ready_q[priority], p);
 	}
+
 	return p;
 }
 
@@ -454,23 +455,36 @@ int wini_send(int dest, message_t *m) {
 
 	//Is the destination valid?
 	if(pDest = get_proc(dest)) {
-
+		kprintf("%d ",pDest->proc_index);
 		//If destination is waiting, deliver message immediately.
 		if(pDest->flags & RECEIVING) {
+			kprintf("data sent from %d\n",current_proc->proc_index);
 			//Copy message to destination
 			*(pDest->message) = *m;
 
 			//Unblock receiver
 			pDest->flags &= ~RECEIVING;
 			enqueue_head(ready_q[pDest->priority], pDest);
+			//if the destination rejects any message it receives,
+			//do not deliver the message, but add it to the scheduling queue
 		}
+		// else if (pDest->flags & REJECT) {
+		// 	//Unblock receiver
+		// 	pDest->flags &= ~REJECT;
+		// 	enqueue_head(ready_q[pDest->priority], pDest);
+		//
+
+
 		else {
+			kprintf(" not waiting from %d\n",current_proc->proc_index);
 			//Otherwise, block current process and add it to head of sending queue of the destination.
 			current_proc->flags |= SENDING;
 			current_proc->next_sender = pDest->sender_q;
 			pDest->sender_q = current_proc;
 		}
 		return 0;
+	}else{
+		kprintf("pid %d not found from %d\n",dest,current_proc->proc_index);
 	}
 
 	return -1;
@@ -504,6 +518,33 @@ int wini_receive(message_t *m) {
 		current_proc->flags |= RECEIVING;
 	}
 	return 0;
+}
+
+int wini_sendonce(int dest, message_t *m) {
+	proc_t *pDest;
+
+	current_proc->message = m; //save for later
+
+	//Is the destination valid?
+	if(pDest = get_proc(dest)) {
+
+		//If destination is waiting, deliver message immediately.
+		if(pDest->flags & RECEIVING) {
+
+			//Copy message to destination
+			*(pDest->message) = *m;
+
+			//Unblock receiver
+			pDest->flags &= ~RECEIVING;
+			enqueue_head(ready_q[pDest->priority], pDest);
+			//if the destination rejects any message it receives,
+			//do not deliver the message, but add it to the scheduling queue
+		}
+
+		//do nothing if it's not waiting
+		return 0;
+	}
+	return -1;
 }
 
 /**

@@ -104,10 +104,19 @@ void system_main() {
 
 			case SYSCALL_FORK:
 				response = fork_proc(p);
-				//m.i1 = response;
-				//winix_send(who, &m);
+				kprintf("send %d back, curr %d",response,who);
+				m.i1 = response;
+				winix_send(who, &m);
+
+				//send 0 to child process
+				// kprintf("send 0 to child %d, curr %d",response,who);
+				// who = response;
+				// m.i1 = 0;
+				// winix_sendonce(who,&m);
+
 				break;
 			case SYSCALL_EXEC:
+				response = exec_read_srec(get_proc(2));
 				break;
 
 			case SYSCALL_SBRK:
@@ -117,13 +126,14 @@ void system_main() {
 				break;
 
 			case SYSCALL_MALLOC:
-				sptr = (size_t *)sys_malloc(m.s1);
+				sptr = (size_t *)proc_malloc(m.s1);
 				m.p1 = sptr;
 				winix_send(who, &m);
 				break;
 
 			case SYSCALL_FREE:
-				sys_free(m.p1);
+				proc_free(m.p1);
+				process_overview();
 				break;
 
 			case SYSCALL_HOLE_OVERVIEW:
@@ -131,9 +141,7 @@ void system_main() {
 				break;
 
 			case SYSCALL_PUTC:
-
 				kputc(m.i1);
-				//winix_send(who,&m);
 				break;
 
 			//System call number is unknown, or not yet implemented.

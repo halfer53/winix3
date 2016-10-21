@@ -159,6 +159,9 @@ static void syscall_handler() {
 			*retval = wini_receive(m);
 			break;
 
+		case WINIX_SENDONCE:
+			*retval = wini_sendonce(dest,m);
+
 		default:
 			break;
 	}
