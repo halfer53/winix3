@@ -120,8 +120,10 @@ static void syscall_handler() {
 	int *retval;
 	proc_t *p;
 	size_t *sp;
+	proc_t *curr = NULL;
+	char *op_name;
+	int counter = 0;
 
-	//TODO: the following does not account for virtual memory offsets.
 	//cast two variables to to size_t to allow addition of two pointer, and then cast back to pointer
 	sp = (size_t *)((size_t)(current_proc->sp) + (size_t)(current_proc->rbase));
 
@@ -149,18 +151,24 @@ static void syscall_handler() {
 	switch(operation) {
 		case WINIX_SENDREC:
 			current_proc->flags |= RECEIVING;
+			op_name = "sendrec";
 			//fall through to send
+			*retval = wini_send(dest, m);
+			break;
 
 		case WINIX_SEND:
+			op_name = "send";
 			*retval = wini_send(dest, m);
 			break;
 
 		case WINIX_RECEIVE:
+			op_name = "receive";
 			*retval = wini_receive(m);
 			break;
 
 		case WINIX_SENDONCE:
 			*retval = wini_sendonce(dest,m);
+			break;
 
 		default:
 			break;
@@ -168,6 +176,16 @@ static void syscall_handler() {
 
 	//A system call could potentially make a high-priority process runnable.
 	//Run scheduler.
+	kprintf(" %s syscall from %d to %d type %d ",op_name,current_proc->proc_index,dest,m->type);
+	curr = ready_q[3][0];
+
+	while (curr != NULL) {
+		kprintf("%s ",curr->name);
+		curr = curr->next;
+
+	}
+
+	kprintf(" | ");
 	sched();
 }
 

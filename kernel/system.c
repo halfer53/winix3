@@ -48,6 +48,9 @@ static void scan_memory() {
  * Entry point for system task.
  **/
 void system_main() {
+	proc_t *curr = ready_q[3][0];
+	proc_t *currpro = current_proc;
+	int counter = 0;
 	//Find Upper Memory Limit
 	kprintf("Scanning Memory");
 	scan_memory();
@@ -103,10 +106,11 @@ void system_main() {
 				break;
 
 			case SYSCALL_FORK:
+				kprintf("in system.c ");
 				response = fork_proc(p);
-				kprintf("send %d back, curr %d",response,who);
-				m.i1 = response;
+				m.i1 = 0;
 				winix_send(who, &m);
+
 
 				//send 0 to child process
 				// kprintf("send 0 to child %d, curr %d",response,who);
@@ -115,8 +119,15 @@ void system_main() {
 				// winix_sendonce(who,&m);
 
 				break;
+
+			case SYSCALL_FORK_PID:
+			 	response = fork_proc(get_proc(m.i1));
+				m.i1 = response;
+				winix_send(who,&m);
+				break;
+
 			case SYSCALL_EXEC:
-				response = exec_read_srec(get_proc(2));
+				response = exec_read_srec(get_proc(who));
 				break;
 
 			case SYSCALL_SBRK:
@@ -132,8 +143,7 @@ void system_main() {
 				break;
 
 			case SYSCALL_FREE:
-				proc_free(m.p1);
-				process_overview();
+				proc_free(who);
 				break;
 
 			case SYSCALL_HOLE_OVERVIEW:
@@ -150,5 +160,51 @@ void system_main() {
 				end_process(p);
 				break;
 		}
+		// currpro->ticks_left = 1;
+		// if (m.type == SYSCALL_FORK ) {
+		// 	while(1){
+		// 		counter++;
+		// 		curr = ready_q[3][0];
+		// 		if(currpro != NULL && !currpro->flags) {
+		// 			//Accounting
+		// 			//kprintf("sched before %s(%d),pc %x, rbase %x, sp %x\n",current_proc->name,current_proc->proc_index,current_proc->rbase,current_proc->sp );
+		// 			currpro->time_used++;
+		// 			// if (current_proc->proc_index == 3) {
+		// 			// 	kprintf("shell time left %d next %d ",current_proc->ticks_left,current_proc->next == NULL ? -1 : current_proc->next->proc_index);
+		// 			// }
+		// 			kprintf("curr %d ",currpro->proc_index);
+		// 			currpro->ticks_left = 1;
+		// 			// while (curr != NULL) {
+		// 			// 	kprintf("%d next %d ",curr->proc_index, (curr->next)->proc_index);
+		// 			// 	curr = curr->next;
+		// 			// }
+		// 			//If there's still time left, reduce timeslice and add it to the head of its priority queue
+		// 			if(--currpro->ticks_left) {
+		// 				enqueue_head(ready_q[currpro->priority], currpro,0);
+		//
+		// 					kprintf(",%d added to head queue \n",currpro->proc_index);
+		// 					//process_overview();
+		//
+		// 			}
+		// 			else { //Re-insert process at the tail of its priority queue
+		// 				enqueue_tail(ready_q[currpro->priority], currpro);
+		//
+		// 				 	kprintf(",%d added to tail queue \n",currpro->proc_index);
+		// 					//process_overview();
+		//
+		// 			}
+		// 		}
+		//
+		// 		//Get the next task
+		// 		currpro = pick_proc();
+		//
+		// 			kprintf(" %d picked \n",currpro->proc_index);
+		// 			process_overview();
+		// 			if (counter >=3) {
+		// 				break;
+		// 			}
+		// 	}
+		//}
+
 	}
 }

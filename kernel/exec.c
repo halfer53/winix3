@@ -22,16 +22,21 @@ proc_t *exec_replace_existing_proc(proc_t *p,size_t *lines, size_t length, size_
 static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, int priority, char *name){
 	void *ptr_base = NULL;
 	int i = 0;
+	int n = 0;
+	int index = 0;
 
 	assert(p != NULL, "can't exec null process\n");
 
 		//it's best to malloc text segment and stack together, so they stick together, and it's easier to manage
+		length = length % 1024 == 0 ? length : length + 1024;
+		length = length < 1024 ? 1024 : ((length / 1024) * 1024);
+		kprintf("allocate %x\n",length);
 		ptr_base = proc_malloc(length + DEFAULT_STACK_SIZE);
 		assert(ptr_base != NULL,"memory is full\n");
 		memcpy(ptr_base, lines,length);
 
 		//p->sp = (size_t *)ptr_base + (size_t)DEFAULT_STACK_SIZE + length;
-		p->sp = (size_t *)(length + DEFAULT_STACK_SIZE); //SP should be the same if virtual address is take into account
+		p->sp = (size_t *)(length + DEFAULT_STACK_SIZE-1); //SP should be the same if virtual address is take into account
 
 		p->priority = priority;
 		p->pc = (void (*)())entry; //PC should be the same if virtual address is taken into account
@@ -43,8 +48,16 @@ static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, i
 		//Update to only enable memory blocks belonging to the process.
 		p->ptable = p->protection_table;
 		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
-			p->protection_table[i] = 0xffffffff;
+			p->protection_table[i] = 0;
 		}
+		n = ((size_t)ptr_base / 1024);
+		index = ((size_t)ptr_base / 1024)/32;
+		for (i = n; i < n + length/1024 +1; i++) {
+			p->protection_table[index] |= (0x80000000 >> i);
+		}
+		p->protection_table[0] |= (0x80000000 >> ((SYS_BSS_START / 1024)));
+		 printProceInfo(p);
+		 kprintf("index %d length %d ptable %x\n",index, length,p->protection_table[index]);
 
 		strcpy(p->name,name);
 
@@ -86,6 +99,7 @@ int exec_read_srec(proc_t *p){
   }
 
   if ((wordslength = winix_load_srec_words_length(buf))) {
+
     memory_values = (size_t *)proc_malloc(wordslength * LONG_SIZE);
     while(1){
       for(i = 0; i < BUF_LEN - 1; i++) {

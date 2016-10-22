@@ -76,6 +76,8 @@ void main() {
 	p->quantum = 1;
 
 	pid = fork_proc(p);
+
+	// pid = fork_proc(p);
 	p = get_proc(pid);
 
 	// p = new_proc(shell_main, USER_PRIORITY, "Shell");
@@ -86,10 +88,6 @@ void main() {
 	assert(p != NULL, "Create Shell task");
 	p->quantum = 4;
 
-
-	p = exec_new_proc(test_code,test_code_length,test_pc, USER_PRIORITY,"TestFork");
-	assert(p != NULL, "Create test task");
-	p->quantum = 10;
 
 	//Rocks game
 	/*p = new_proc(rocks_main, USER_PRIORITY, "Rocks");

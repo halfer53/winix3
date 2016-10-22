@@ -18,8 +18,6 @@ int ps(int argc, char **argv);
 int uptime(int argc, char **argv);
 int shutdown(int argc, char **argv);
 int exit(int argc, char **argv);
-int shell_fork(int argc, char **argv);
-int shell_exec(int argc, char **argv);
 int testmalloc(int argc, char **argv);
 int generic(int argc, char **argv);
 #define my_sizeof(var) (char *)(&var+1)-(char*)(&var)
@@ -40,8 +38,6 @@ struct cmd commands[] = {
 	{ "shutdown", shutdown },
 	{ "exit", exit },
 	{ "ps", ps },
-	{ "fork", shell_fork },
-	{ "exec", shell_exec },
 	{ "testmal", testmalloc},
 	{ NULL, generic }
 };
@@ -126,17 +122,6 @@ int testmalloc(int argc, char **argv){
 	return 0;
 }
 
-int shell_exec(int argc, char **argv){
-	printf("please drag the srec file onto this windows\n" );
-
-	return exec();
-}
-int shell_fork(int argc, char **argv){
-	int forkid = 0;
-	forkid = fork();
-	return 0;
-}
-
 int ps(int argc, char **argv){
 	return sys_process_overview();
 }
@@ -186,9 +171,16 @@ int generic(int argc, char **argv) {
 	if(argc == 0)
 		return 0;
 
-	//TODO: fork/exec program at argv[0]
+		if (strcmp("exec",argv[0]) == 0) {
+			printf("please drag the srec file onto this windows\n" );
+			return exec();
+		}else if (strcmp("fork",argv[0]) == 0) {
+			int forkid = 0;
 
-	//printf("Unknown command '%s'\r\n", argv[0]);
+			forkid = fork();
+			return 0;
+		}
+	printf("Unknown command '%s'\r\n", argv[0]);
 	return -1;
 }
 
@@ -197,6 +189,8 @@ void main() {
 	int argc;
 	char *c;
 	struct cmd *handler = NULL;
+	i = fork();
+	return;
 	while(1) {
 		printf("WINIX> ");
 
@@ -229,8 +223,10 @@ void main() {
 		while(*c) {
 
 			//Skip over non-alphanumeric characters
-			while(*c && !isPrintable(*c))
+			while(*c && !isPrintable(*c)){
 				c++;
+			}
+
 
 			//Add new token
 			if(*c != '\0') {
@@ -238,13 +234,16 @@ void main() {
 			}
 
 			//Skip over alphanumeric characters
-			while(*c && isPrintable(*c))
+			while(*c && isPrintable(*c)){
 				c++;
+			}
+
 
 			if(*c != '\0') {
 				*c++ = '\0';
 			}
 		}
+
 
 		//Decode command
 		handler = commands;

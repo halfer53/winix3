@@ -5,8 +5,7 @@
 #include <size.h>
 
 int main(int argc, char const *argv[]) {
-  int pid = 0;
-  pid = fork();
-  printf("My child pid is %d\n",pid );
+  printf("I'm loaded\n I'm closed\n" );
+  sys_exit(0);
   return 0;
 }

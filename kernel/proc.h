@@ -89,7 +89,9 @@ typedef struct proc {
 } proc_t;
 
 extern proc_t proc_table[NUM_PROCS];
-
+extern proc_t *ready_q[NUM_QUEUES][2];
+void enqueue_tail(proc_t **q, proc_t *proc);
+ void enqueue_head(proc_t **q, proc_t *proc, int print);
 /**
  * Initialises the process table and scheduling queues.
  **/
@@ -136,7 +138,7 @@ int fork_proc(proc_t *p);
 int process_overview();
 void printProceInfo(proc_t* curr);
 char* getStateName(proc_state_t state);
-
+proc_t *pick_proc();
 
 /**
  * Receives a message.

@@ -13,6 +13,8 @@ static hole_t *used_holes[2];
 #define HEAD 0
 #define TAIL 1
 
+size_t SYS_BSS_START = 0;
+
 /**
  * Adds a proc to the tail of a list.
  *
@@ -302,6 +304,7 @@ void *memcpy(void *s1, const void *s2, register size_t n)
 void init_memory(){
   hole_t *h = NULL;
   int i = 0;
+	size_t *p = NULL;
 	unused_holes[HEAD] = unused_holes[TAIL] = NULL;
 	used_holes[HEAD] = used_holes[TAIL] = NULL;
 	pending_holes[HEAD] = pending_holes[TAIL] = NULL;
@@ -313,6 +316,12 @@ void init_memory(){
 		h->next = NULL;
 		hole_enqueue_head(pending_holes,h);
 	}
+	h = hole_dequeue(pending_holes);
+	h->start = (size_t *)_sbrk(1024);
+	SYS_BSS_START = (size_t)h->start;
+	h->length = 1023; //this is bit of hack here,
+	hole_enqueue_head(unused_holes,h);
+
 }
 
 int sizeof_hole_t(){

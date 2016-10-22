@@ -6,6 +6,7 @@
  **/
 
 #include "winix.h"
+#include <sys/syscall.h>
 
 //Linked lists are defined by a head and tail pointer.
 #define HEAD 0
@@ -15,7 +16,7 @@
 proc_t proc_table[NUM_PROCS];
 
 //Scheduling queues
-static proc_t *ready_q[NUM_QUEUES][2];
+ proc_t *ready_q[NUM_QUEUES][2];
 
 //Entries in the process table that are not in use
 static proc_t *free_proc[2];
@@ -38,7 +39,7 @@ size_t FREE_MEM_END = 0;
  *   q		An array containing a head and tail pointer of a linked list.
  *   proc	The proc struct to add to the list.
  **/
-static void enqueue_tail(proc_t **q, proc_t *proc) {
+ void enqueue_tail(proc_t **q, proc_t *proc) {
 	if(q[HEAD] == NULL) {
 		q[HEAD] = q[TAIL] = proc;
 	}
@@ -56,7 +57,17 @@ static void enqueue_tail(proc_t **q, proc_t *proc) {
  *   q		An array containing a head and tail pointer of a linked list.
  *   proc	The proc struct to add to the list.
  **/
-static void enqueue_head(proc_t **q, proc_t *proc) {
+ void enqueue_head(proc_t **q, proc_t *proc, int print) {
+	proc_t *curr = NULL;
+	if ((proc->proc_index == 3 || proc->proc_index == 4 )&& print) {
+		curr = q[HEAD];
+		kprintf("%d before enqueue head ",proc->proc_index);
+		while (curr != NULL) {
+			kprintf("%s ",curr->name);
+			curr = curr->next;
+		}
+		kprintf("\n");
+	}
 	if(q[HEAD] == NULL) {
 		proc->next = NULL;
 		q[HEAD] = q[TAIL] = proc;
@@ -64,6 +75,15 @@ static void enqueue_head(proc_t **q, proc_t *proc) {
 	else {
 		proc->next = q[HEAD];
 		q[HEAD] = proc;
+	}
+	if ((proc->proc_index == 3 || proc->proc_index == 4 )&& print) {
+		curr = q[HEAD];
+		kprintf("%d after enqueue head ",proc->proc_index);
+		while (curr != NULL) {
+			kprintf("%s ",curr->name);
+			curr = curr->next;
+		}
+		kprintf("\n");
 	}
 }
 
@@ -182,7 +202,7 @@ void proc_set_default(proc_t *p){
  * Side Effects:
  *   A proc is removed from a ready_q.
  **/
-static proc_t *pick_proc() {
+ proc_t *pick_proc() {
 	int i;
 
 	//Find the highest-priority non-empty queue
@@ -212,6 +232,9 @@ int fork_proc(proc_t *original){
 	void *ptr_base = NULL;
 	int priority = 0;
 	int i = 0;
+	int n = 0;
+	int length = 0;
+	int index =0;
 
 	if (original->length == 0 || (size_t)(original->rbase) == 0) {
 		//we can't fork p1 if it's a system task
@@ -220,8 +243,12 @@ int fork_proc(proc_t *original){
 	}
 
 	if(p = get_free_proc()) {
+		length = original->length;
+		length = length % 1024 == 0 ? length : length + 1024;
+	  length = length < 1024 ? 1024 : ((length / 1024) * 1024);
+		kprintf("allocate %x original length %x\n",length,original->length);
 		//it's best to malloc text segment and stack together, so they stick together, and it's easier to manage
-		ptr_base = proc_malloc(original->length + DEFAULT_STACK_SIZE);
+		ptr_base = proc_malloc(length + DEFAULT_STACK_SIZE);
 		assert(ptr_base != NULL,"memory is full");
 		memcpy(ptr_base,original->rbase,original->length + DEFAULT_STACK_SIZE);
 
@@ -234,18 +261,32 @@ int fork_proc(proc_t *original){
 		}
 		p->priority = original->priority;
 		p->pc = original->pc; //PC should be the same if virtual address is taken into account
-		kprintf("%d's pc at %x\n",p->proc_index,(size_t)p->pc+(size_t)p->rbase);
+		//kprintf("%d's pc at %x\n",p->proc_index,(size_t)p->pc+(size_t)p->rbase);
 		p->ra = original->ra;
 		p->rbase = ptr_base;
 		p->cctrl = original->cctrl;
 
+		n = (size_t)ptr_base / 1024;
+		if ((size_t)ptr_base % 1024 != 0) {
+			kprintf("process in not in a 1024 block");
+		}
+
 		//Initialise protection table
-		//TODO: this loop allows unrestricted access to all memory.
-		//Update to only enable memory blocks belonging to the process.
+
 		p->ptable = p->protection_table;
 		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
-			p->protection_table[i] = 0xffffffff;
+			p->protection_table[i] = 0;
 		}
+
+		n = ((size_t)ptr_base / 1024);
+		index = ((size_t)ptr_base / 1024)/32;
+		for (i = n; i < n + length/1024 +1; i++) {
+			p->protection_table[index] |= (0x80000000 >> i);
+		}
+		p->protection_table[0] |= (0x80000000 >> ((SYS_BSS_START / 1024)));
+		//printProceInfo(p);
+		//kprintf("index %d length %d ptable %x\n",index, length,p->protection_table[index]);
+		//assume text and stack segment are connected together
 
 		priority = p->priority = original->priority;
 		p->quantum = original->quantum;
@@ -272,7 +313,7 @@ int fork_proc(proc_t *original){
 		enqueue_tail(ready_q[priority], p);
 	}
 	assert(p != NULL, "Fork");
-	kprintf("new proc %d parent %d\n",p->proc_index,p->parent_proc_index);
+	//kprintf("new proc %d parent %d\n",p->proc_index,p->parent_proc_index);
 	return p->proc_index;
 }
 
@@ -295,6 +336,9 @@ int fork_proc(proc_t *original){
 proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 	proc_t *p = NULL;
 	int i;
+	size_t *ptr = NULL;
+	int n = 0;
+	int temp =0;
 
 	//Is the priority valid?
 	if(!(0 <= priority && priority < NUM_QUEUES)) {
@@ -308,15 +352,15 @@ proc_t *new_proc(void (*entry)(), int priority, const char *name) {
 
 		strcpy(p->name,name);
 
-		//Initialise protection table
-		//TODO: this loop allows unrestricted accesssys to all memory.
-		//Update to only enable memory blocks belonging to the process.
+
 		p->ptable = p->protection_table;
 		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
 			p->protection_table[i] = 0xffffffff;
 		}
-		//don't have to double check
-		p->sp = (size_t *)_sbrk(DEFAULT_STACK_SIZE) + (size_t)DEFAULT_STACK_SIZE;
+		//system task has access to everywhere in the memory
+
+		ptr = (size_t *)_sbrk(DEFAULT_STACK_SIZE);
+		p->sp = ptr + (size_t)DEFAULT_STACK_SIZE-1;
 
 		//Set the process to runnable, and enqueue it.
 		p->state = RUNNABLE;
@@ -347,20 +391,20 @@ void end_process(proc_t *p) {
 
 int process_overview(){
 	int i=0;
-	proc_t *curr = NULL;
-	if (current_proc != NULL) {
-		kprintf("\r\ncurrent_proc sp 0x%x name %s state %s\r\n", current_proc->sp,current_proc->name,getStateName(current_proc->state));
-	}
-	for (i=0; i < NUM_QUEUES; i++) {
-		if (ready_q[i][HEAD] != NULL) {
-			kprintf("\r\npriority %d\r\n",i );
-			curr = ready_q[i][HEAD];
-			while(curr != NULL){
-				printProceInfo(curr);
-				curr = curr->next;
-			}
-		}
-	}
+  kprintf("PS\n");
+	// proc_t *curr = NULL;
+	// if (current_proc != NULL) {
+	// 	kprintf("current_proc sp 0x%x name %s state %s\r\n", current_proc->sp,current_proc->name,getStateName(current_proc->state));
+	// }
+	// for (i=0; i < NUM_QUEUES; i++) {
+	// 	if (ready_q[i][HEAD] != NULL) {
+	// 		curr = ready_q[i][HEAD];
+	// 		while(curr != NULL){
+	// 			printProceInfo(curr);
+	// 			curr = curr->next;
+	// 		}
+	// 	}
+	// }
 	return 0;
 }
 
@@ -394,29 +438,72 @@ char* getStateName(proc_state_t state){
  *   Context of the new proc is loaded.
  **/
 void sched() {
+	proc_t *curr = ready_q[3][HEAD];
+	int forkedshell = 0;
 	if(current_proc != NULL && !current_proc->flags) {
 		//Accounting
 		//kprintf("sched before %s(%d),pc %x, rbase %x, sp %x\n",current_proc->name,current_proc->proc_index,current_proc->rbase,current_proc->sp );
 		current_proc->time_used++;
+		if (current_proc->proc_index == 4) {
+			kprintf(" || fork_shell left %d || ",current_proc->ticks_left);
+		}
 
 		//If there's still time left, reduce timeslice and add it to the head of its priority queue
 		if(--current_proc->ticks_left) {
-			enqueue_head(ready_q[current_proc->priority], current_proc);
+			enqueue_head(ready_q[current_proc->priority], current_proc,0);
+			if (current_proc->proc_index == 4) {
+				kprintf(" fork head enqueue || ");
+			}
+      curr = ready_q[3][HEAD];
+    	while(curr != NULL && curr->proc_index != 4){
+    		curr = curr->next;
+    	}
+      if (current_proc->proc_index == 3 && curr != NULL) {
+				kprintf(" shell head enqueue || ");
+			}
 		}
 		else { //Re-insert process at the tail of its priority queue
 			enqueue_tail(ready_q[current_proc->priority], current_proc);
+			if (current_proc->proc_index == 4) {
+				kprintf(" fork tail enqueue || ");
+			}
+      curr = ready_q[3][HEAD];
+    	while(curr != NULL && curr->proc_index != 4){
+    		curr = curr->next;
+    	}
+      if (current_proc->proc_index == 3 && curr != NULL) {
+				kprintf(" shell tail enqueue || ");
+			}
 		}
-	}
+	}else{
+    kprintf("|| curr %d ||",current_proc->proc_index);
+  }
 
 	//Get the next task
 	current_proc = pick_proc();
+
+
 	assert(current_proc != NULL, "sched: current_proc null");
-	// kprintf("sched next %s(%d),pc %x, rbase %x, sp %x\n",current_proc->name,current_proc->proc_index,current_proc->pc,current_proc->rbase,current_proc->sp );
+	//kprintf("sched next %s(%d),pc %x, rbase %x, sp %x\n",current_proc->name,current_proc->proc_index,current_proc->pc,current_proc->rbase,current_proc->sp );
 	// process_overview();
 	//Reset quantum if needed
-	if(current_proc->ticks_left == 0) {
+	if(current_proc->ticks_left <= 0) {
 		current_proc->ticks_left = current_proc->quantum;
+  }
+
+
+  if (current_proc->proc_index == 4) {
+		kprintf("|| fork picked left %d|| ",current_proc->ticks_left);
 	}
+  curr = ready_q[3][HEAD];
+	while(curr != NULL && curr->proc_index != 4){
+		curr = curr->next;
+	}
+	if (curr != NULL) {
+    kprintf("|| shell picked left %d|| ",current_proc->ticks_left);
+	}
+
+
 	//Load context and run
 	wramp_load_context();
 }
@@ -455,18 +542,17 @@ int wini_send(int dest, message_t *m) {
 
 	//Is the destination valid?
 	if(pDest = get_proc(dest)) {
-		kprintf("%d ",pDest->proc_index);
+
+		//kprintf("%d ",pDest->proc_index);
 		//If destination is waiting, deliver message immediately.
 		if(pDest->flags & RECEIVING) {
-			kprintf("data sent from %d\n",current_proc->proc_index);
+			//kprintf("data sent from %d\n",current_proc->proc_index);
 			//Copy message to destination
 			*(pDest->message) = *m;
-
 			//Unblock receiver
 			pDest->flags &= ~RECEIVING;
-			enqueue_head(ready_q[pDest->priority], pDest);
-			//if the destination rejects any message it receives,
-			//do not deliver the message, but add it to the scheduling queue
+			enqueue_head(ready_q[pDest->priority], pDest,0);
+			kprintf(" %d enqueued curr %d at send | ",dest,current_proc->proc_index);
 		}
 		// else if (pDest->flags & REJECT) {
 		// 	//Unblock receiver
@@ -476,15 +562,16 @@ int wini_send(int dest, message_t *m) {
 
 
 		else {
-			kprintf(" not waiting from %d\n",current_proc->proc_index);
 			//Otherwise, block current process and add it to head of sending queue of the destination.
 			current_proc->flags |= SENDING;
 			current_proc->next_sender = pDest->sender_q;
 			pDest->sender_q = current_proc;
+      kprintf(" %d blocked curr %d at send | ",dest,current_proc->proc_index);
 		}
+
 		return 0;
 	}else{
-		kprintf("pid %d not found from %d\n",dest,current_proc->proc_index);
+		//kprintf("pid %d not found from %d\n",dest,current_proc->proc_index);
 	}
 
 	return -1;
@@ -503,6 +590,7 @@ int wini_receive(message_t *m) {
 
 	//If a process is waiting to send to this process, deliver it immediately.
 	if(p != NULL) {
+
 		//Dequeue head node
 		current_proc->sender_q = p->next_sender;
 
@@ -511,7 +599,8 @@ int wini_receive(message_t *m) {
 
 		//Unblock sender
 		p->flags &= ~SENDING;
-		enqueue_head(ready_q[p->priority], p);
+		enqueue_head(ready_q[p->priority], p,1);
+		kprintf(" sender %d enqueued at receive| ",p->proc_index);
 	}
 	else {
 		current_proc->message = m;
@@ -536,7 +625,7 @@ int wini_sendonce(int dest, message_t *m) {
 
 			//Unblock receiver
 			pDest->flags &= ~RECEIVING;
-			enqueue_head(ready_q[pDest->priority], pDest);
+			enqueue_head(ready_q[pDest->priority], pDest,1);
 			//if the destination rejects any message it receives,
 			//do not deliver the message, but add it to the scheduling queue
 		}

@@ -5,6 +5,7 @@ typedef struct _hole{
 }hole_t;
 
 #define NUM_HOLES 100
+extern size_t SYS_BSS_START;
 
 static void hole_enqueue_tail(hole_t **q, hole_t *hole);
 static void hole_enqueue_head(hole_t **q, hole_t *hole);

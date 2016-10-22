@@ -48,7 +48,19 @@ int fork(){
 
 	m.type = SYSCALL_FORK;
 	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-	printf("received %d\n",m.i1);
+	response = m.i1;
+	sys_process_overview();
+	return m.i1;
+}
+
+int fork_pid(int proc_index){
+	int response = 0;
+	message_t m;
+
+	m.type = SYSCALL_FORK_PID;
+	m.i1 = proc_index;
+	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
+
 	return m.i1;
 }
 
@@ -59,16 +71,6 @@ int exec(){
 	m.type = SYSCALL_EXEC;
 	response = winix_send(SYSTEM_TASK, &m); //TODO: error checking
 	return 0;
-}
-
-void *sbrk(unsigned long size){
-	int response = 0;
-	message_t m;
-
-	m.type = SYSCALL_FORK;
-	m.s1 = size;
-	response = winix_sendrec(SYSTEM_TASK, &m); //TODO: error checking
-	return m.p1;
 }
 
 void *malloc(unsigned long size){
