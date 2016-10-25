@@ -29,17 +29,17 @@ shell:
 	rm shell.o
 	rm shell.s
 	gcc gen_bin_code.c -o gen_bin_code
-	./gen_bin_code > include/exec_codes.c
+	./gen_bin_code shell.srec > include/exec_codes.c
 	rm shell.srec
 
-testprog:
-	cp user/testprog.c .
-	wcc -S testprog.c
-	wasm testprog.s
-	wlink -o testprog.srec testprog.o lib/stdio.o lib/syscall.o lib/ipc.o lib/wramp_syscall.o
-	java reformat_srec testprog.srec
-	rm testprog.c
-	rm testprog.o
-	rm testprog.s
+printf:
+	cp user/printf.c .
+	wcc -S printf.c
+	wasm printf.s
+	wlink -o printf.srec printf.o lib/stdio.o lib/syscall.o lib/ipc.o lib/wramp_syscall.o
+	java reformat_srec printf.srec
+	rm printf.c
+	rm printf.o
+	rm printf.s
 
 .DELETE_ON_ERROR:

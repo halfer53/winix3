@@ -86,8 +86,7 @@ void main() {
 
 	p = exec_replace_existing_proc(p,shell_code,shell_code_length,shell_pc, USER_PRIORITY,"Shell");
 	assert(p != NULL, "Create Shell task");
-	p->quantum = 4;
-
+	p->quantum = 10;
 
 	//Rocks game
 	/*p = new_proc(rocks_main, USER_PRIORITY, "Rocks");
@@ -104,6 +103,7 @@ void main() {
 	init_exceptions();
 
 	//Kick off first task. Note: never returns
-	process_overview();
+
+	//process_overview();
 	sched();
 }

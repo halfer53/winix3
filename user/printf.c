@@ -5,7 +5,9 @@
 #include <size.h>
 
 int main(int argc, char const *argv[]) {
-  printf("I'm loaded\n I'm closed\n" );
-  sys_exit(0);
+	while(1){
+		printf("I'm loaded");
+	}
+	
   return 0;
 }

@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
     size_t len = 0;
     ssize_t read;
 
-    fp = fopen("shell.srec", "r");
+    fp = fopen("fork.srec", "r");
     if (fp == NULL)
         exit(EXIT_FAILURE);
     printf("size_t shell_code[] = {\n" );

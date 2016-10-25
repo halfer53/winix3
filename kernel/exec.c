@@ -1,5 +1,7 @@
 #include "winix.h"
 
+//dynamically allocate a new memory space in the memory, and
+//write mem values in lines to that space
 proc_t *exec_new_proc(size_t *lines, size_t length, size_t entry, int priority, char *name){
 	proc_t *p = NULL;
 	if(p = get_free_proc()) {
@@ -9,6 +11,7 @@ proc_t *exec_new_proc(size_t *lines, size_t length, size_t entry, int priority, 
   return p;
 }
 
+//replace the currently running process with the new text, priority, and name provided
 proc_t *exec_replace_existing_proc(proc_t *p,size_t *lines, size_t length, size_t entry, int priority, char *name){
 	assert(p != NULL, "can't exec null process\n");
 	proc_free(p->rbase);
@@ -18,7 +21,10 @@ proc_t *exec_replace_existing_proc(proc_t *p,size_t *lines, size_t length, size_
   return p;
 }
 
-
+/**
+ * malloc a new memory and write the values of lines into that address
+ * the process is updated
+ **/
 static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, int priority, char *name){
 	void *ptr_base = NULL;
 	int i = 0;
@@ -27,10 +33,12 @@ static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, i
 
 	assert(p != NULL, "can't exec null process\n");
 
-		//it's best to malloc text segment and stack together, so they stick together, and it's easier to manage
+		//it's easier to malloc text segment and stack together, so they stick together, and it's easier to manage
+		//TODO split the text segment and stack by 1024 bits, and prohibit access to the space in between
+		//so that stackoverflow is handled
 		length = length % 1024 == 0 ? length : length + 1024;
 		length = length < 1024 ? 1024 : ((length / 1024) * 1024);
-		kprintf("allocate %x\n",length);
+		//kprintf("allocate %x\n",length);
 		ptr_base = proc_malloc(length + DEFAULT_STACK_SIZE);
 		assert(ptr_base != NULL,"memory is full\n");
 		memcpy(ptr_base, lines,length);
@@ -44,8 +52,6 @@ static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, i
 		p->rbase = ptr_base;
 
 		//Initialise protection table
-		//TODO: this loop allows unrestricted access to all memory.
-		//Update to only enable memory blocks belonging to the process.
 		p->ptable = p->protection_table;
 		for(i = 0; i < PROTECTION_TABLE_LEN; i++) {
 			p->protection_table[i] = 0;
@@ -56,8 +62,6 @@ static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, i
 			p->protection_table[index] |= (0x80000000 >> i);
 		}
 		p->protection_table[0] |= (0x80000000 >> ((SYS_BSS_START / 1024)));
-		 printProceInfo(p);
-		 kprintf("index %d length %d ptable %x\n",index, length,p->protection_table[index]);
 
 		strcpy(p->name,name);
 
@@ -65,17 +69,19 @@ static proc_t *exec_proc(proc_t *p,size_t *lines, size_t length, size_t entry, i
 		p->state = RUNNABLE;
 
 		p->length = length;
-		//process_overview();
-		//kprintf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
+		//printProceInfo(p);
+		//kprintf("index %d length %d ptable %x\n",index, length,p->protection_table[index]);
+
 		add_to_scheduling_queue(p);
-		//kprintf("before at p %d, proc_i %d\r\n",priority,ready_q[priority][HEAD]->proc_index );
-		//process_overview();
+
 	return p;
 }
 
 
 #define BUF_LEN		100
 
+//sys method used by shell to read srec file from serial port 1
+//and replace the parameter process with the new dynamically loaded process
 int exec_read_srec(proc_t *p){
   char buf[BUF_LEN];
   size_t *memory_values = NULL;
@@ -85,8 +91,7 @@ int exec_read_srec(proc_t *p){
   int i = 0;
   size_t entry = 0;
 
-	fork_proc(p);
-
+	//read a line from the port
   for(i = 0; i < BUF_LEN - 1; i++) {
     buf[i] = kgetc(); 	//read
 		// temp = (int)buf[i];
@@ -97,17 +102,18 @@ int exec_read_srec(proc_t *p){
       break;
     }
   }
-
+	//assuming the first line of the srec is of type S6, so we can read the length of the words to be loaded
   if ((wordslength = winix_load_srec_words_length(buf))) {
-
+		//allocate a new array for storing temporary text
     memory_values = (size_t *)proc_malloc(wordslength * LONG_SIZE);
     while(1){
+			//read line
       for(i = 0; i < BUF_LEN - 1; i++) {
         buf[i] = kgetc(); 	//read
-				// temp = (int)buf[i];
-				// kprintf("%d ",temp);
+				 //temp = (int)buf[i];
+				 //kprintf("%d ",temp);
         if(buf[i] == '\n') { //test for end
-					buf[i+1] = '\0';
+					buf[i] = '\0';
 					break;
         }
       }
@@ -115,6 +121,8 @@ int exec_read_srec(proc_t *p){
         kprintf("incorrect srec file format: line too big\n");
         return 0;
       }
+			//if the line is of type S7, then we are at the end of the srec file, the data returned, should
+			//be the entry point of the process
       if (buf[1] == '7') {
         temp = wordsLoaded;
         entry = winix_load_srec_mem_val(buf,memory_values,wordsLoaded,wordslength);
@@ -125,13 +133,14 @@ int exec_read_srec(proc_t *p){
         }
         break;
       }else{
+				//if it's not the end of srec, read the line, store the text values read into the memory temp array
+				//and add the wordsLoaded by the amount added
 				if ((temp = winix_load_srec_mem_val(buf,memory_values,wordsLoaded,wordslength))) {
 						wordsLoaded += temp;
 				}else{
 					kprintf("something went wrong\n");
 					return 0;
 				}
-
       }
       if (wordsLoaded > wordslength) {
         kprintf("wordsLoaded %d exceed wordslength %d\n",wordsLoaded,wordslength);
@@ -140,18 +149,18 @@ int exec_read_srec(proc_t *p){
       if (wordsLoaded % 100 == 0) {
         kputc('.');
       }
-
     }
     //kprintf("wordsLoaded %d wordslength %d\n",wordsLoaded,wordslength);
-    p = exec_replace_existing_proc(p,memory_values,wordslength,entry,SYSTEM_PRIORITY,p->name);
-		p->quantum = 10;
 
+
+		p = exec_replace_existing_proc(p,memory_values,wordslength,entry,SYSTEM_PRIORITY,p->name);
     return 1;
   }else{
     return 0;
   }
 }
 
+//load S6 srec type, and return the size of memory words
 static int winix_load_srec_words_length(char *line){
   int i=0;
 
@@ -224,7 +233,8 @@ static int winix_load_srec_words_length(char *line){
         return data;
 }
 
-
+//read the Srec line, and return the number of words loaded
+//lines is appended with the new words read from the srec file
 static size_t winix_load_srec_mem_val(char *line,size_t *memory_values,int start_index,int memvalLength){
 	int wordsLoaded = 0;
 	int index = 0;
@@ -379,9 +389,9 @@ static size_t winix_load_srec_mem_val(char *line,size_t *memory_values,int start
 												memVal |= data[j];
 										}
 
-										wordsLoaded++;
                     memory_values[start_index + wordsLoaded] = memVal;
-										//kprintf("0x%08x\n",(unsigned int)memVal );
+										wordsLoaded++;
+										//kprintf("0x%x\n",memVal );
 								}
 								break;
 

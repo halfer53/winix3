@@ -137,11 +137,6 @@ static void syscall_handler() {
 	m = *(message_t **)(sp+ 2);	//Message pointer is the third parameter on the stack
 	m->src = current_proc->proc_index;			//Don't trust the caller to specify their own source process number
 
-	//kprintf("Exception sp %x, ori sp %x,rbase %x, operation %d, dest %d curr %d\n",sp,current_proc->sp,current_proc->rbase,*(sp),*(sp+1),current_proc->proc_index );
-	//kprintf("sp2 %x typecast %x val %x\n, m %x" ,(sp+ 2),(message_t **)(sp+ 2),*(message_t **)(sp+ 2), m);
-	//kprintf("addr %x, val %x, src %x (%x) type %d (%x) i1 %d (%x)\n",m, *m, m->src, &(m->src), m->type , &(m->type) , m->i1 , &(m->i1));
-
-
 	retval = (int*)&current_proc->regs[0];		//Result is returned in register $1
 	//kprintf(" sp %x, operation %d, dest %d\n",sp,operation,dest );
 	//Default return value is an error code
@@ -153,8 +148,6 @@ static void syscall_handler() {
 			current_proc->flags |= RECEIVING;
 			op_name = "sendrec";
 			//fall through to send
-			*retval = wini_send(dest, m);
-			break;
 
 		case WINIX_SEND:
 			op_name = "send";
@@ -176,16 +169,9 @@ static void syscall_handler() {
 
 	//A system call could potentially make a high-priority process runnable.
 	//Run scheduler.
-	kprintf(" %s syscall from %d to %d type %d ",op_name,current_proc->proc_index,dest,m->type);
-	curr = ready_q[3][0];
-
-	while (curr != NULL) {
-		kprintf("%s ",curr->name);
-		curr = curr->next;
-
-	}
-
-	kprintf(" | ");
+	// if (m->type == 7) {
+	// 	kprintf("$ %s syscall from %d to %d type %d ",op_name,current_proc->proc_index,dest,m->type);
+	// }
 	sched();
 }
 

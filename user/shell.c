@@ -176,7 +176,6 @@ int generic(int argc, char **argv) {
 			return exec();
 		}else if (strcmp("fork",argv[0]) == 0) {
 			int forkid = 0;
-
 			forkid = fork();
 			return 0;
 		}
@@ -189,8 +188,6 @@ void main() {
 	int argc;
 	char *c;
 	struct cmd *handler = NULL;
-	i = fork();
-	return;
 	while(1) {
 		printf("WINIX> ");
 

@@ -62,14 +62,13 @@ void system_main() {
 	kprintf("BSS Segment:  0x%x - 0x%x\r\n", &BSS_BEGIN, &BSS_END);
 	kprintf("Unallocated:  0x%x - 0x%x\r\n", FREE_MEM_BEGIN, FREE_MEM_END);
 
-
-
 	//Receive message, do work, repeat.
 	while(1) {
 
 		message_t m;
+		message_t *fork_m;
 		int who;
-		proc_t *p;
+		proc_t *p, *child_p;
 		size_t *sptr;
 		int response = 0;
 		void *ptr = NULL;
@@ -106,24 +105,28 @@ void system_main() {
 				break;
 
 			case SYSCALL_FORK:
-				kprintf("in system.c ");
+				//fork the calling process
 				response = fork_proc(p);
-				m.i1 = 0;
+				m.i1 = response;
 				winix_send(who, &m);
 
+				//send 0 to child
+				//NOTE that the forked child should
+				//not belong to any scheduling queue, since winix_receive will do that automatically
 
-				//send 0 to child process
-				// kprintf("send 0 to child %d, curr %d",response,who);
-				// who = response;
-				// m.i1 = 0;
-				// winix_sendonce(who,&m);
+				m.i1 = 0;
+				winix_send(response,&m);
 
 				break;
 
 			case SYSCALL_FORK_PID:
+				//fork specific process
 			 	response = fork_proc(get_proc(m.i1));
 				m.i1 = response;
 				winix_send(who,&m);
+
+				m.i1 = 0;
+				winix_send(response,&m);
 				break;
 
 			case SYSCALL_EXEC:
@@ -160,51 +163,6 @@ void system_main() {
 				end_process(p);
 				break;
 		}
-		// currpro->ticks_left = 1;
-		// if (m.type == SYSCALL_FORK ) {
-		// 	while(1){
-		// 		counter++;
-		// 		curr = ready_q[3][0];
-		// 		if(currpro != NULL && !currpro->flags) {
-		// 			//Accounting
-		// 			//kprintf("sched before %s(%d),pc %x, rbase %x, sp %x\n",current_proc->name,current_proc->proc_index,current_proc->rbase,current_proc->sp );
-		// 			currpro->time_used++;
-		// 			// if (current_proc->proc_index == 3) {
-		// 			// 	kprintf("shell time left %d next %d ",current_proc->ticks_left,current_proc->next == NULL ? -1 : current_proc->next->proc_index);
-		// 			// }
-		// 			kprintf("curr %d ",currpro->proc_index);
-		// 			currpro->ticks_left = 1;
-		// 			// while (curr != NULL) {
-		// 			// 	kprintf("%d next %d ",curr->proc_index, (curr->next)->proc_index);
-		// 			// 	curr = curr->next;
-		// 			// }
-		// 			//If there's still time left, reduce timeslice and add it to the head of its priority queue
-		// 			if(--currpro->ticks_left) {
-		// 				enqueue_head(ready_q[currpro->priority], currpro,0);
-		//
-		// 					kprintf(",%d added to head queue \n",currpro->proc_index);
-		// 					//process_overview();
-		//
-		// 			}
-		// 			else { //Re-insert process at the tail of its priority queue
-		// 				enqueue_tail(ready_q[currpro->priority], currpro);
-		//
-		// 				 	kprintf(",%d added to tail queue \n",currpro->proc_index);
-		// 					//process_overview();
-		//
-		// 			}
-		// 		}
-		//
-		// 		//Get the next task
-		// 		currpro = pick_proc();
-		//
-		// 			kprintf(" %d picked \n",currpro->proc_index);
-		// 			process_overview();
-		// 			if (counter >=3) {
-		// 				break;
-		// 			}
-		// 	}
-		//}
 
 	}
 }

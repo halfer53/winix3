@@ -91,7 +91,7 @@ typedef struct proc {
 extern proc_t proc_table[NUM_PROCS];
 extern proc_t *ready_q[NUM_QUEUES][2];
 void enqueue_tail(proc_t **q, proc_t *proc);
- void enqueue_head(proc_t **q, proc_t *proc, int print);
+ void enqueue_head(proc_t **q, proc_t *proc);
 /**
  * Initialises the process table and scheduling queues.
  **/
@@ -133,6 +133,7 @@ proc_t *get_proc(int proc_nr);
 //side effect: the head of the free_proc is dequeued, and added to the ready_q with all relevant values equal
 //to the original process, except stack pointer.
 int fork_proc(proc_t *p);
+proc_t *kernel_fork_proc(proc_t *original);
 
 
 int process_overview();
